@@ -5206,5 +5206,5 @@ spyder = ["spyder"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "3.9.7"
-content-hash = "b2c114534beda4e9ff7af1e3087fe4c2ad54bf1abad29e94826933a0d1d652db"
+python-versions = ">=3.9.7,<3.10"
+content-hash = "9a5bdd08c5b58581627f4f7c303140d78cffefed015a05d57ee6ba95acbcfa13"
