@@ -11,10 +11,10 @@
 ## Get Started
 
 Prerequisites:
-* Python 3.8+
-* [Poetry](https://python-poetry.org)
-* Java 8.0+
-* FFmpeg (for video recording utilities)
+- Python 3.9.7 (use pyenv or dead snakes to manage your version)
+- [Poetry](https://python-poetry.org) (Use the official installer, not pipx)
+- Java 8.0+
+- FFmpeg (for video recording utilities)
 
 ```bash
 $ git clone --recursive https://github.com/Farama-Foundation/MicroRTS-Py.git && \

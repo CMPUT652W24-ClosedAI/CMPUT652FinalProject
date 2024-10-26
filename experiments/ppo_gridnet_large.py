@@ -124,7 +124,9 @@ class MicroRTSStatsRecorder(VecEnvWrapper):
             self.raw_rewards[i] += [infos[i]["raw_rewards"]]
             self.raw_discount_rewards[i] += [
                 (self.gamma ** self.ts[i])
-                * np.concatenate((infos[i]["raw_rewards"], infos[i]["raw_rewards"].sum()), axis=None)
+                * np.concatenate(
+                    (infos[i]["raw_rewards"], infos[i]["raw_rewards"].sum()), axis=None
+                )
             ]
             self.ts[i] += 1
             if dones[i]:
@@ -132,9 +134,13 @@ class MicroRTSStatsRecorder(VecEnvWrapper):
                 raw_returns = np.array(self.raw_rewards[i]).sum(0)
                 raw_names = [str(rf) for rf in self.rfs]
                 raw_discount_returns = np.array(self.raw_discount_rewards[i]).sum(0)
-                raw_discount_names = ["discounted_" + str(rf) for rf in self.rfs] + ["discounted"]
+                raw_discount_names = ["discounted_" + str(rf) for rf in self.rfs] + [
+                    "discounted"
+                ]
                 info["microrts_stats"] = dict(zip(raw_names, raw_returns))
-                info["microrts_stats"].update(dict(zip(raw_discount_names, raw_discount_returns)))
+                info["microrts_stats"].update(
+                    dict(zip(raw_discount_names, raw_discount_returns))
+                )
                 self.raw_rewards[i] = []
                 self.raw_discount_rewards[i] = []
                 self.ts[i] = 0
@@ -144,7 +150,9 @@ class MicroRTSStatsRecorder(VecEnvWrapper):
 
 # ALGO LOGIC: initialize agent here:
 class CategoricalMasked(Categorical):
-    def __init__(self, probs=None, logits=None, validate_args=None, masks=[], mask_value=None):
+    def __init__(
+        self, probs=None, logits=None, validate_args=None, masks=[], mask_value=None
+    ):
         logits = torch.where(masks.bool(), logits, mask_value)
         super(CategoricalMasked, self).__init__(probs, logits, validate_args)
 
@@ -185,13 +193,21 @@ class Agent(nn.Module):
         )
 
         self.actor = nn.Sequential(
-            layer_init(nn.ConvTranspose2d(256, 128, 3, stride=2, padding=1, output_padding=1)),
+            layer_init(
+                nn.ConvTranspose2d(256, 128, 3, stride=2, padding=1, output_padding=1)
+            ),
             nn.ReLU(),
-            layer_init(nn.ConvTranspose2d(128, 64, 3, stride=2, padding=1, output_padding=1)),
+            layer_init(
+                nn.ConvTranspose2d(128, 64, 3, stride=2, padding=1, output_padding=1)
+            ),
             nn.ReLU(),
-            layer_init(nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1)),
+            layer_init(
+                nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1)
+            ),
             nn.ReLU(),
-            layer_init(nn.ConvTranspose2d(32, 78, 3, stride=2, padding=1, output_padding=1)),
+            layer_init(
+                nn.ConvTranspose2d(32, 78, 3, stride=2, padding=1, output_padding=1)
+            ),
             Transpose((0, 2, 3, 1)),
         )
         self.critic = nn.Sequential(
@@ -202,7 +218,9 @@ class Agent(nn.Module):
         )
         self.register_buffer("mask_value", torch.tensor(-1e8))
 
-    def get_action_and_value(self, x, action=None, invalid_action_masks=None, envs=None, device=None):
+    def get_action_and_value(
+        self, x, action=None, invalid_action_masks=None, envs=None, device=None
+    ):
         """
         :return:
             (1) action (shape = [num_envs, width*height, 7], where 7 = dimensionality of per-unit action)
@@ -214,32 +232,57 @@ class Agent(nn.Module):
         hidden = self.encoder(x)
         logits = self.actor(hidden)
         grid_logits = logits.reshape(-1, envs.action_plane_space.nvec.sum())
-        split_logits = torch.split(grid_logits, envs.action_plane_space.nvec.tolist(), dim=1)
+        split_logits = torch.split(
+            grid_logits, envs.action_plane_space.nvec.tolist(), dim=1
+        )
 
         if action is None:
             # invalid_action_masks = torch.tensor(np.array(envs.vec_client.getMasks(0))).to(device)
-            invalid_action_masks = invalid_action_masks.view(-1, invalid_action_masks.shape[-1])
-            split_invalid_action_masks = torch.split(invalid_action_masks, envs.action_plane_space.nvec.tolist(), dim=1)
+            invalid_action_masks = invalid_action_masks.view(
+                -1, invalid_action_masks.shape[-1]
+            )
+            split_invalid_action_masks = torch.split(
+                invalid_action_masks, envs.action_plane_space.nvec.tolist(), dim=1
+            )
             multi_categoricals = [
                 CategoricalMasked(logits=logits, masks=iam, mask_value=self.mask_value)
                 for (logits, iam) in zip(split_logits, split_invalid_action_masks)
             ]
-            action = torch.stack([categorical.sample() for categorical in multi_categoricals])
+            action = torch.stack(
+                [categorical.sample() for categorical in multi_categoricals]
+            )
         else:
-            invalid_action_masks = invalid_action_masks.view(-1, invalid_action_masks.shape[-1])
+            invalid_action_masks = invalid_action_masks.view(
+                -1, invalid_action_masks.shape[-1]
+            )
             action = action.view(-1, action.shape[-1]).T
-            split_invalid_action_masks = torch.split(invalid_action_masks, envs.action_plane_space.nvec.tolist(), dim=1)
+            split_invalid_action_masks = torch.split(
+                invalid_action_masks, envs.action_plane_space.nvec.tolist(), dim=1
+            )
             multi_categoricals = [
                 CategoricalMasked(logits=logits, masks=iam, mask_value=self.mask_value)
                 for (logits, iam) in zip(split_logits, split_invalid_action_masks)
             ]
-        logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)])
-        entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals])
+        logprob = torch.stack(
+            [
+                categorical.log_prob(a)
+                for a, categorical in zip(action, multi_categoricals)
+            ]
+        )
+        entropy = torch.stack(
+            [categorical.entropy() for categorical in multi_categoricals]
+        )
         num_predicted_parameters = len(envs.action_plane_space.nvec)
         logprob = logprob.T.view(-1, self.mapsize, num_predicted_parameters)
         entropy = entropy.T.view(-1, self.mapsize, num_predicted_parameters)
         action = action.T.view(-1, self.mapsize, num_predicted_parameters)
-        return action, logprob.sum(1).sum(1), entropy.sum(1).sum(1), invalid_action_masks, self.critic(hidden)
+        return (
+            action,
+            logprob.sum(1).sum(1),
+            entropy.sum(1).sum(1),
+            invalid_action_masks,
+            self.critic(hidden),
+        )
 
     def get_value(self, x):
         return self.critic(self.encoder(x))
@@ -283,8 +326,12 @@ class TrueskillWriter:
         league = pd.read_csv(output_path, index_col="name")
         assert model_path in league.index
         model_global_step = int(model_path.split("/")[-1][:-3])
-        self.writer.add_scalar("charts/trueskill", league.loc[model_path]["trueskill"], model_global_step)
-        print(f"global_step={model_global_step}, trueskill={league.loc[model_path]['trueskill']}")
+        self.writer.add_scalar(
+            "charts/trueskill", league.loc[model_path]["trueskill"], model_global_step
+        )
+        print(
+            f"global_step={model_global_step}, trueskill={league.loc[model_path]['trueskill']}"
+        )
 
         # table visualization logic
         if self.prod_mode:
@@ -294,14 +341,20 @@ class TrueskillWriter:
                 "sigma": league.loc[model_path]["sigma"],
                 "trueskill": league.loc[model_path]["trueskill"],
             }
-            self.trueskill_df = self.trueskill_df.append(trueskill_data, ignore_index=True)
+            self.trueskill_df = self.trueskill_df.append(
+                trueskill_data, ignore_index=True
+            )
             wandb.log({"trueskill": wandb.Table(dataframe=self.trueskill_df)})
             trueskill_data["type"] = "training"
             trueskill_data["step"] = model_global_step
-            self.trueskill_step_df = self.trueskill_step_df.append(trueskill_data, ignore_index=True)
+            self.trueskill_step_df = self.trueskill_step_df.append(
+                trueskill_data, ignore_index=True
+            )
             preset_trueskill_step_df_clone = self.preset_trueskill_step_df.copy()
             preset_trueskill_step_df_clone["step"] = model_global_step
-            self.trueskill_step_df = self.trueskill_step_df.append(preset_trueskill_step_df_clone, ignore_index=True)
+            self.trueskill_step_df = self.trueskill_step_df.append(
+                preset_trueskill_step_df_clone, ignore_index=True
+            )
             wandb.log({"trueskill_step": wandb.Table(dataframe=self.trueskill_step_df)})
 
 
@@ -326,7 +379,9 @@ if __name__ == "__main__":
         CHECKPOINT_FREQUENCY = 50
     writer = SummaryWriter(f"runs/{experiment_name}")
     writer.add_text(
-        "hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()]))
+        "hyperparameters",
+        "|param|value|\n|-|-|\n%s"
+        % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
 
     # TRY NOT TO MODIFY: seeding
@@ -352,13 +407,20 @@ if __name__ == "__main__":
     envs = VecMonitor(envs)
     if args.capture_video:
         envs = VecVideoRecorder(
-            envs, f"videos/{experiment_name}", record_video_trigger=lambda x: x % 100000 == 0, video_length=2000
+            envs,
+            f"videos/{experiment_name}",
+            record_video_trigger=lambda x: x % 100000 == 0,
+            video_length=2000,
         )
-    assert isinstance(envs.action_space, MultiDiscrete), "only MultiDiscrete action space is supported"
+    assert isinstance(
+        envs.action_space, MultiDiscrete
+    ), "only MultiDiscrete action space is supported"
 
     eval_executor = None
     if args.max_eval_workers > 0:
-        eval_executor = ThreadPoolExecutor(max_workers=args.max_eval_workers, thread_name_prefix="league-eval-")
+        eval_executor = ThreadPoolExecutor(
+            max_workers=args.max_eval_workers, thread_name_prefix="league-eval-"
+        )
 
     agent = Agent(envs).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
@@ -371,13 +433,19 @@ if __name__ == "__main__":
     action_space_shape = (mapsize, len(envs.action_plane_space.nvec))
     invalid_action_shape = (mapsize, envs.action_plane_space.nvec.sum())
 
-    obs = torch.zeros((args.num_steps, args.num_envs) + envs.observation_space.shape).to(device)
-    actions = torch.zeros((args.num_steps, args.num_envs) + action_space_shape).to(device)
+    obs = torch.zeros(
+        (args.num_steps, args.num_envs) + envs.observation_space.shape
+    ).to(device)
+    actions = torch.zeros((args.num_steps, args.num_envs) + action_space_shape).to(
+        device
+    )
     logprobs = torch.zeros((args.num_steps, args.num_envs)).to(device)
     rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
     dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
     values = torch.zeros((args.num_steps, args.num_envs)).to(device)
-    invalid_action_masks = torch.zeros((args.num_steps, args.num_envs) + invalid_action_shape).to(device)
+    invalid_action_masks = torch.zeros(
+        (args.num_steps, args.num_envs) + invalid_action_shape
+    ).to(device)
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
@@ -396,7 +464,9 @@ if __name__ == "__main__":
         run = api.run(f"{run.entity}/{run.project}/{run.id}")
         model = run.file("agent.pt")
         model.download(f"models/{experiment_name}/")
-        agent.load_state_dict(torch.load(f"models/{experiment_name}/agent.pt", map_location=device))
+        agent.load_state_dict(
+            torch.load(f"models/{experiment_name}/agent.pt", map_location=device)
+        )
         agent.eval()
         print(f"resumed at update {starting_update}")
 
@@ -408,7 +478,10 @@ if __name__ == "__main__":
 
     ## EVALUATION LOGIC:
     trueskill_writer = TrueskillWriter(
-        args.prod_mode, writer, "gym-microrts-static-files/league.csv", "gym-microrts-static-files/league.csv"
+        args.prod_mode,
+        writer,
+        "gym-microrts-static-files/league.csv",
+        "gym-microrts-static-files/league.csv",
     )
 
     for update in range(starting_update, args.num_updates + 1):
@@ -426,29 +499,48 @@ if __name__ == "__main__":
             dones[step] = next_done
             # ALGO LOGIC: put action logic here
             with torch.no_grad():
-                invalid_action_masks[step] = torch.tensor(np.array(envs.get_action_mask())).to(device)
+                invalid_action_masks[step] = torch.tensor(
+                    np.array(envs.get_action_mask())
+                ).to(device)
                 action, logproba, _, _, vs = agent.get_action_and_value(
-                    next_obs, envs=envs, invalid_action_masks=invalid_action_masks[step], device=device
+                    next_obs,
+                    envs=envs,
+                    invalid_action_masks=invalid_action_masks[step],
+                    device=device,
                 )
                 values[step] = vs.flatten()
 
             actions[step] = action
             logprobs[step] = logproba
             try:
-                next_obs, rs, ds, infos = envs.step(action.cpu().numpy().reshape(envs.num_envs, -1))
+                next_obs, rs, ds, infos = envs.step(
+                    action.cpu().numpy().reshape(envs.num_envs, -1)
+                )
                 next_obs = torch.Tensor(next_obs).to(device)
             except Exception as e:
                 e.printStackTrace()
                 raise
-            rewards[step], next_done = torch.Tensor(rs).to(device), torch.Tensor(ds).to(device)
+            rewards[step], next_done = torch.Tensor(rs).to(device), torch.Tensor(ds).to(
+                device
+            )
 
             for info in infos:
                 if "episode" in info.keys():
-                    print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                    writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
-                    writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+                    print(
+                        f"global_step={global_step}, episodic_return={info['episode']['r']}"
+                    )
+                    writer.add_scalar(
+                        "charts/episodic_return", info["episode"]["r"], global_step
+                    )
+                    writer.add_scalar(
+                        "charts/episodic_length", info["episode"]["l"], global_step
+                    )
                     for key in info["microrts_stats"]:
-                        writer.add_scalar(f"charts/episodic_return/{key}", info["microrts_stats"][key], global_step)
+                        writer.add_scalar(
+                            f"charts/episodic_return/{key}",
+                            info["microrts_stats"][key],
+                            global_step,
+                        )
                     break
 
         # bootstrap reward if not done. reached the batch limit
@@ -464,8 +556,15 @@ if __name__ == "__main__":
                     else:
                         nextnonterminal = 1.0 - dones[t + 1]
                         nextvalues = values[t + 1]
-                    delta = rewards[t] + args.gamma * nextvalues * nextnonterminal - values[t]
-                    advantages[t] = lastgaelam = delta + args.gamma * args.gae_lambda * nextnonterminal * lastgaelam
+                    delta = (
+                        rewards[t]
+                        + args.gamma * nextvalues * nextnonterminal
+                        - values[t]
+                    )
+                    advantages[t] = lastgaelam = (
+                        delta
+                        + args.gamma * args.gae_lambda * nextnonterminal * lastgaelam
+                    )
                 returns = advantages + values
             else:
                 returns = torch.zeros_like(rewards).to(device)
@@ -486,7 +585,9 @@ if __name__ == "__main__":
         b_advantages = advantages.reshape(-1)
         b_returns = returns.reshape(-1)
         b_values = values.reshape(-1)
-        b_invalid_action_masks = invalid_action_masks.reshape((-1,) + invalid_action_shape)
+        b_invalid_action_masks = invalid_action_masks.reshape(
+            (-1,) + invalid_action_shape
+        )
 
         # Optimizing the policy and value network
         inds = np.arange(
@@ -499,9 +600,15 @@ if __name__ == "__main__":
                 minibatch_ind = inds[start:end]
                 mb_advantages = b_advantages[minibatch_ind]
                 if args.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (
+                        mb_advantages.std() + 1e-8
+                    )
                 _, newlogproba, entropy, _, new_values = agent.get_action_and_value(
-                    b_obs[minibatch_ind], b_actions.long()[minibatch_ind], b_invalid_action_masks[minibatch_ind], envs, device
+                    b_obs[minibatch_ind],
+                    b_actions.long()[minibatch_ind],
+                    b_invalid_action_masks[minibatch_ind],
+                    envs,
+                    device,
                 )
                 ratio = (newlogproba - b_logprobs[minibatch_ind]).exp()
 
@@ -510,7 +617,9 @@ if __name__ == "__main__":
 
                 # Policy loss
                 pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
+                pg_loss2 = -mb_advantages * torch.clamp(
+                    ratio, 1 - args.clip_coef, 1 + args.clip_coef
+                )
                 pg_loss = torch.max(pg_loss1, pg_loss2).mean()
                 entropy_loss = entropy.mean()
 
@@ -519,7 +628,9 @@ if __name__ == "__main__":
                 if args.clip_vloss:
                     v_loss_unclipped = (new_values - b_returns[minibatch_ind]) ** 2
                     v_clipped = b_values[minibatch_ind] + torch.clamp(
-                        new_values - b_values[minibatch_ind], -args.clip_coef, args.clip_coef
+                        new_values - b_values[minibatch_ind],
+                        -args.clip_coef,
+                        args.clip_coef,
                     )
                     v_loss_clipped = (v_clipped - b_returns[minibatch_ind]) ** 2
                     v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
@@ -540,16 +651,24 @@ if __name__ == "__main__":
             torch.save(agent.state_dict(), f"models/{experiment_name}/agent.pt")
             torch.save(agent.state_dict(), f"models/{experiment_name}/{global_step}.pt")
             if args.prod_mode:
-                wandb.save(f"models/{experiment_name}/agent.pt", base_path=f"models/{experiment_name}", policy="now")
+                wandb.save(
+                    f"models/{experiment_name}/agent.pt",
+                    base_path=f"models/{experiment_name}",
+                    policy="now",
+                )
             if eval_executor is not None:
                 future = eval_executor.submit(
-                    run_evaluation, f"models/{experiment_name}/{global_step}.pt", f"runs/{experiment_name}/{global_step}.csv"
+                    run_evaluation,
+                    f"models/{experiment_name}/{global_step}.pt",
+                    f"runs/{experiment_name}/{global_step}.csv",
                 )
                 print(f"Queued models/{experiment_name}/{global_step}.pt")
                 future.add_done_callback(trueskill_writer.on_evaluation_done)
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
-        writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
+        writer.add_scalar(
+            "charts/learning_rate", optimizer.param_groups[0]["lr"], global_step
+        )
         writer.add_scalar("charts/update", update, global_step)
         writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
         writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
@@ -557,7 +676,9 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         if args.kle_stop or args.kle_rollback:
             writer.add_scalar("debug/pg_stop_iter", i_epoch_pi, global_step)
-        writer.add_scalar("charts/sps", int(global_step / (time.time() - start_time)), global_step)
+        writer.add_scalar(
+            "charts/sps", int(global_step / (time.time() - start_time)), global_step
+        )
         print("SPS:", int(global_step / (time.time() - start_time)))
 
     if eval_executor is not None:

@@ -78,7 +78,16 @@ def test_observation():
     np.testing.assert_array_equal(next_obs[1][13][13], p1_base)
 
     feature_sum = 0
-    for item in [resource, resource, p1_worker, p1_base, resource, resource, p2_worker, p2_base]:
+    for item in [
+        resource,
+        resource,
+        p1_worker,
+        p1_base,
+        resource,
+        resource,
+        p2_worker,
+        p2_base,
+    ]:
         feature_sum += item.sum()
     feature_sum += empty_cell.sum() * (256 - 8)
     assert next_obs.sum() == feature_sum * 2 == 3072.0

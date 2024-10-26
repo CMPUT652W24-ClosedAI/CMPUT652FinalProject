@@ -114,6 +114,7 @@ def mayari(utt):
 #     from MentalSeal import MentalSeal
 #     return MentalSeal(utt)
 
+
 # https://github.com/rubensolv/GRojoA3N
 def guidedRojoA3N(utt):
     from ai.competition.GRojoA3N import GuidedRojoA3N

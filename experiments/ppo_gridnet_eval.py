@@ -97,7 +97,9 @@ if __name__ == "__main__":
         CHECKPOINT_FREQUENCY = 10
     writer = SummaryWriter(f"runs/{experiment_name}")
     writer.add_text(
-        "hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()]))
+        "hyperparameters",
+        "|param|value|\n|-|-|\n%s"
+        % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
 
     # TRY NOT TO MODIFY: seeding
@@ -124,9 +126,14 @@ if __name__ == "__main__":
     envs = VecMonitor(envs)
     if args.capture_video:
         envs = VecVideoRecorder(
-            envs, f"videos/{experiment_name}", record_video_trigger=lambda x: x % 100000 == 0, video_length=2000
+            envs,
+            f"videos/{experiment_name}",
+            record_video_trigger=lambda x: x % 100000 == 0,
+            video_length=2000,
         )
-    assert isinstance(envs.action_space, MultiDiscrete), "only MultiDiscrete action space is supported"
+    assert isinstance(
+        envs.action_space, MultiDiscrete
+    ), "only MultiDiscrete action space is supported"
 
     agent = Agent(envs).to(device)
     agent2 = Agent(envs).to(device)
@@ -164,11 +171,16 @@ if __name__ == "__main__":
             global_step += 1 * args.num_envs
             # ALGO LOGIC: put action logic here
             with torch.no_grad():
-                invalid_action_masks = torch.tensor(np.array(envs.get_action_mask())).to(device)
+                invalid_action_masks = torch.tensor(
+                    np.array(envs.get_action_mask())
+                ).to(device)
 
                 if args.ai:
                     action, logproba, _, _, vs = agent.get_action_and_value(
-                        next_obs, envs=envs, invalid_action_masks=invalid_action_masks, device=device
+                        next_obs,
+                        envs=envs,
+                        invalid_action_masks=invalid_action_masks,
+                        device=device,
                     )
                 else:
                     p1_obs = next_obs[::2]
@@ -182,12 +194,16 @@ if __name__ == "__main__":
                     p2_action, _, _, _, _ = agent2.get_action_and_value(
                         p2_obs, envs=envs, invalid_action_masks=p2_mask, device=device
                     )
-                    action = torch.zeros((args.num_envs, p2_action.shape[1], p2_action.shape[2]))
+                    action = torch.zeros(
+                        (args.num_envs, p2_action.shape[1], p2_action.shape[2])
+                    )
                     action[::2] = p1_action
                     action[1::2] = p2_action
 
             try:
-                next_obs, rs, ds, infos = envs.step(action.cpu().numpy().reshape(envs.num_envs, -1))
+                next_obs, rs, ds, infos = envs.step(
+                    action.cpu().numpy().reshape(envs.num_envs, -1)
+                )
                 next_obs = torch.Tensor(next_obs).to(device)
             except Exception as e:
                 e.printStackTrace()
@@ -196,10 +212,17 @@ if __name__ == "__main__":
             for idx, info in enumerate(infos):
                 if "episode" in info.keys():
                     if args.ai:
-                        print("against", args.ai, info["microrts_stats"]["WinLossRewardFunction"])
+                        print(
+                            "against",
+                            args.ai,
+                            info["microrts_stats"]["WinLossRewardFunction"],
+                        )
                     else:
                         if idx % 2 == 0:
-                            print(f"player{idx % 2}", info["microrts_stats"]["WinLossRewardFunction"])
+                            print(
+                                f"player{idx % 2}",
+                                info["microrts_stats"]["WinLossRewardFunction"],
+                            )
 
     envs.close()
     writer.close()

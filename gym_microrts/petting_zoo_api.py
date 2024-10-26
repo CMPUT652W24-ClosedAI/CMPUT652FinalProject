@@ -8,7 +8,9 @@ from pettingzoo.utils import agent_selector
 from gym_microrts.envs.vec_env import MicroRTSGridModeSharedMemVecEnv
 
 
-class PettingZooMicroRTSGridModeSharedMemVecEnv(AECEnv, MicroRTSGridModeSharedMemVecEnv):
+class PettingZooMicroRTSGridModeSharedMemVecEnv(
+    AECEnv, MicroRTSGridModeSharedMemVecEnv
+):
 
     metadata = {"render.modes": ["human"], "name": "micrortsEnv-v0"}
 
@@ -51,9 +53,13 @@ class PettingZooMicroRTSGridModeSharedMemVecEnv(AECEnv, MicroRTSGridModeSharedMe
         _bots = ["bot_" + str(r) for r in range(num_bot_envs)]
         self.possible_agents = _players + _bots
 
-        self.agent_name_mapping = dict(zip(self.possible_agents, list(range(len(self.possible_agents)))))
+        self.agent_name_mapping = dict(
+            zip(self.possible_agents, list(range(len(self.possible_agents))))
+        )
 
-        self.action_spaces = {agent: self.agent_action_space for agent in self.possible_agents}
+        self.action_spaces = {
+            agent: self.agent_action_space for agent in self.possible_agents
+        }
 
         map_size = self.agent_action_space.shape[0] / 7
 
@@ -61,7 +67,9 @@ class PettingZooMicroRTSGridModeSharedMemVecEnv(AECEnv, MicroRTSGridModeSharedMe
             agent: spaces.Dict(
                 {
                     "obs": self.agent_observation_space,
-                    "action_masks": spaces.Box(low=0, high=1, shape=(map_size, 78), dtype=np.int32),
+                    "action_masks": spaces.Box(
+                        low=0, high=1, shape=(map_size, 78), dtype=np.int32
+                    ),
                 }
             )
             for agent in self.possible_agents
@@ -123,7 +131,10 @@ class PettingZooMicroRTSGridModeSharedMemVecEnv(AECEnv, MicroRTSGridModeSharedMe
             for i, agent in enumerate(self.agents):
                 self.rewards[agent] = reward[i]
                 self.dones[agent] = done[i]
-                self.observations[agent] = {"obs": obs[i, :], "action_masks": mask[i, :]}
+                self.observations[agent] = {
+                    "obs": obs[i, :],
+                    "action_masks": mask[i, :],
+                }
 
             self.num_moves += 1
         else:

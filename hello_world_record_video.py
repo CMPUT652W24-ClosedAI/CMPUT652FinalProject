@@ -15,7 +15,9 @@ envs = MicroRTSGridModeVecEnv(
     map_paths=["maps/16x16/basesWorkers16x16.xml"],
     reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0]),
 )
-envs = VecVideoRecorder(envs, "videos", record_video_trigger=lambda x: x % 4000 == 0, video_length=2000)
+envs = VecVideoRecorder(
+    envs, "videos", record_video_trigger=lambda x: x % 4000 == 0, video_length=2000
+)
 
 
 def softmax(x, axis=None):

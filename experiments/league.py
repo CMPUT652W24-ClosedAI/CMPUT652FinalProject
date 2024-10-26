@@ -128,7 +128,12 @@ class Outcome(Enum):
 
 
 class Match:
-    def __init__(self, partial_obs: bool, match_up=None, map_path="maps/16x16/basesWorkers16x16A.xml"):
+    def __init__(
+        self,
+        partial_obs: bool,
+        match_up=None,
+        map_path="maps/16x16/basesWorkers16x16A.xml",
+    ):
         # mode 0: rl-ai vs built-in-ai
         # mode 1: rl-ai vs rl-ai
         # mode 2: built-in-ai vs built-in-ai
@@ -174,7 +179,9 @@ class Match:
         self.built_in_ais2 = built_in_ais2
         self.rl_ai = rl_ai
         self.rl_ai2 = rl_ai2
-        self.device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() and args.cuda else "cpu"
+        )
         max_steps = 5000
         if mode == 0:
             self.envs = MicroRTSGridModeVecEnv(
@@ -206,7 +213,9 @@ class Match:
             self.agent.load_state_dict(torch.load(self.rl_ai, map_location=self.device))
             self.agent.eval()
             self.agent2 = Agent(self.envs).to(self.device)
-            self.agent2.load_state_dict(torch.load(self.rl_ai2, map_location=self.device))
+            self.agent2.load_state_dict(
+                torch.load(self.rl_ai2, map_location=self.device)
+            )
             self.agent2.eval()
         else:
             self.envs = MicroRTSBotVecEnv(
@@ -237,12 +246,19 @@ class Match:
             # self.envs.render()
             # ALGO LOGIC: put action logic here
             with torch.no_grad():
-                mask = torch.tensor(np.array(self.envs.get_action_mask())).to(self.device)
+                mask = torch.tensor(np.array(self.envs.get_action_mask())).to(
+                    self.device
+                )
                 action, _, _, _, _ = self.agent.get_action_and_value(
-                    next_obs, envs=self.envs, invalid_action_masks=mask, device=self.device
+                    next_obs,
+                    envs=self.envs,
+                    invalid_action_masks=mask,
+                    device=self.device,
                 )
             try:
-                next_obs, rs, ds, infos = self.envs.step(action.cpu().numpy().reshape(self.envs.num_envs, -1))
+                next_obs, rs, ds, infos = self.envs.step(
+                    action.cpu().numpy().reshape(self.envs.num_envs, -1)
+                )
                 next_obs = torch.Tensor(next_obs).to(self.device)
             except Exception as e:
                 e.printStackTrace()
@@ -262,7 +278,9 @@ class Match:
             # self.envs.render()
             # ALGO LOGIC: put action logic here
             with torch.no_grad():
-                mask = torch.tensor(np.array(self.envs.get_action_mask())).to(self.device)
+                mask = torch.tensor(np.array(self.envs.get_action_mask())).to(
+                    self.device
+                )
 
                 p1_obs = next_obs[::2]
                 p2_obs = next_obs[1::2]
@@ -270,17 +288,27 @@ class Match:
                 p2_mask = mask[1::2]
 
                 p1_action, _, _, _, _ = self.agent.get_action_and_value(
-                    p1_obs, envs=self.envs, invalid_action_masks=p1_mask, device=self.device
+                    p1_obs,
+                    envs=self.envs,
+                    invalid_action_masks=p1_mask,
+                    device=self.device,
                 )
                 p2_action, _, _, _, _ = self.agent2.get_action_and_value(
-                    p2_obs, envs=self.envs, invalid_action_masks=p2_mask, device=self.device
+                    p2_obs,
+                    envs=self.envs,
+                    invalid_action_masks=p2_mask,
+                    device=self.device,
                 )
-                action = torch.zeros((self.envs.num_envs, p2_action.shape[1], p2_action.shape[2]))
+                action = torch.zeros(
+                    (self.envs.num_envs, p2_action.shape[1], p2_action.shape[2])
+                )
                 action[::2] = p1_action
                 action[1::2] = p2_action
 
             try:
-                next_obs, rs, ds, infos = self.envs.step(action.cpu().numpy().reshape(self.envs.num_envs, -1))
+                next_obs, rs, ds, infos = self.envs.step(
+                    action.cpu().numpy().reshape(self.envs.num_envs, -1)
+                )
                 next_obs = torch.Tensor(next_obs).to(self.device)
             except Exception as e:
                 e.printStackTrace()
@@ -367,7 +395,12 @@ if __name__ == "__main__":
     for ai_name in all_ai_names:
         ai = AI.get_or_none(name=ai_name)
         if ai is None:
-            ai = AI(name=ai_name, mu=25.0, sigma=8.333333333333334, ai_type=get_ai_type(ai_name))
+            ai = AI(
+                name=ai_name,
+                mu=25.0,
+                sigma=8.333333333333334,
+                ai_type=get_ai_type(ai_name),
+            )
             ai.save()
 
     # case 1: initialize the league with round robin
@@ -396,10 +429,14 @@ if __name__ == "__main__":
                             winner = defender
                             loser = challenger
 
-                        print(f"{winner.name} {'draws' if drawn else 'wins'} {loser.name}")
+                        print(
+                            f"{winner.name} {'draws' if drawn else 'wins'} {loser.name}"
+                        )
 
                         winner_rating, loser_rating = rate_1vs1(
-                            Rating(winner.mu, winner.sigma), Rating(loser.mu, loser.sigma), drawn=drawn
+                            Rating(winner.mu, winner.sigma),
+                            Rating(loser.mu, loser.sigma),
+                            drawn=drawn,
                         )
 
                         winner.mu, winner.sigma = winner_rating.mu, winner_rating.sigma
@@ -419,7 +456,9 @@ if __name__ == "__main__":
     # case 2: new AIs
     else:
         leaderboard = get_leaderboard_existing_ais(existing_ai_names)
-        new_ai_names = [ai_name for ai_name in args.evals if ai_name not in existing_ai_names]
+        new_ai_names = [
+            ai_name for ai_name in args.evals if ai_name not in existing_ai_names
+        ]
         for new_ai_name in new_ai_names:
             ai = AI.get(name=new_ai_name)
 
@@ -433,7 +472,9 @@ if __name__ == "__main__":
                     match_qualities += [[opponent_ai, quality_1vs1(ai, opponent_ai)]]
 
                 # sort by quality
-                match_qualities = sorted(match_qualities, key=lambda x: x[1], reverse=True)
+                match_qualities = sorted(
+                    match_qualities, key=lambda x: x[1], reverse=True
+                )
                 print("match_qualities[:3]", match_qualities[:3])
 
                 # run a match if the quality of the opponent is high enough
@@ -441,7 +482,9 @@ if __name__ == "__main__":
                 opponent_ai = random.choice(top_3_ai)
                 match_up = (ai.name, opponent_ai.name)
                 match_quality = quality_1vs1(ai, opponent_ai)
-                print(f"the match up is ({ai}, {opponent_ai}), quality is {round(match_quality, 4)}")
+                print(
+                    f"the match up is ({ai}, {opponent_ai}), quality is {round(match_quality, 4)}"
+                )
                 winner = ai  # dummy setting
                 for idx in range(2):  # switch player 1 and 2's starting locations
                     if idx == 0:
@@ -465,9 +508,13 @@ if __name__ == "__main__":
                             else:
                                 winner = defender
                                 loser = challenger
-                            print(f"{winner.name} {'draws' if drawn else 'wins'} {loser.name}")
+                            print(
+                                f"{winner.name} {'draws' if drawn else 'wins'} {loser.name}"
+                            )
                             winner_rating, loser_rating = rate_1vs1(
-                                Rating(winner.mu, winner.sigma), Rating(loser.mu, loser.sigma), drawn=drawn
+                                Rating(winner.mu, winner.sigma),
+                                Rating(loser.mu, loser.sigma),
+                                drawn=drawn,
                             )
 
                             # freeze existing AIs ratings

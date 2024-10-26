@@ -16,7 +16,13 @@ def parse_args():
 
 class PCG:
     def __init__(
-        self, width=16, height=16, key=15, unit_location_records=[], sections_choices=[0, 1, 2, 3], base_location_records=[]
+        self,
+        width=16,
+        height=16,
+        key=15,
+        unit_location_records=[],
+        sections_choices=[0, 1, 2, 3],
+        base_location_records=[],
     ):
         self.height = height
         self.width = width
@@ -27,9 +33,18 @@ class PCG:
         self.key = key
         self.sections = [
             ((self.wallRings, (width - 1) // 2), (self.wallRings, (height - 1) // 2)),
-            ((width // 2, (width - 1) - self.wallRings), (self.wallRings, (height - 1) // 2)),
-            ((self.wallRings, (width - 1) // 2), (height // 2, (height - 1) - self.wallRings)),
-            ((width // 2, (width - 1) - self.wallRings), (height // 2, (height - 1) - self.wallRings)),
+            (
+                (width // 2, (width - 1) - self.wallRings),
+                (self.wallRings, (height - 1) // 2),
+            ),
+            (
+                (self.wallRings, (width - 1) // 2),
+                (height // 2, (height - 1) - self.wallRings),
+            ),
+            (
+                (width // 2, (width - 1) - self.wallRings),
+                (height // 2, (height - 1) - self.wallRings),
+            ),
         ]
         self.unit_location_records = unit_location_records
         self.sections_choices = sections_choices
@@ -48,10 +63,14 @@ class PCG:
 
         for y in range(self.height):
             for x in range(self.width):
-                if y in range(0, wallRings) or y in range(self.height - wallRings, self.height):
+                if y in range(0, wallRings) or y in range(
+                    self.height - wallRings, self.height
+                ):
                     eText += "1"
                     self.unit_location_records.append((x, y))
-                elif x in range(0, wallRings) or x in range(self.height - wallRings, self.height):
+                elif x in range(0, wallRings) or x in range(
+                    self.height - wallRings, self.height
+                ):
                     eText += "1"
                     self.unit_location_records.append((x, y))
                 else:
@@ -134,18 +153,20 @@ class PCG:
         return str(self.key)
 
     def get_xy(self, index):
-        x, y = random.randint(self.sections[index][0][0], self.sections[index][0][1]), random.randint(
-            self.sections[index][1][0], self.sections[index][1][1]
-        )
+        x, y = random.randint(
+            self.sections[index][0][0], self.sections[index][0][1]
+        ), random.randint(self.sections[index][1][0], self.sections[index][1][1])
         while (x, y) in self.unit_location_records:
-            x, y = random.randint(self.sections[index][0][0], self.sections[index][0][1]), random.randint(
-                self.sections[index][1][0], self.sections[index][1][1]
-            )
+            x, y = random.randint(
+                self.sections[index][0][0], self.sections[index][0][1]
+            ), random.randint(self.sections[index][1][0], self.sections[index][1][1])
         self.unit_location_records.append((x, y))
         return x, y
 
     def get_map(self):
-        root = ET.Element("rts.PhysicalGameState", width=str(self.width), height=str(self.height))
+        root = ET.Element(
+            "rts.PhysicalGameState", width=str(self.width), height=str(self.height)
+        )
         self.initiate_terrain(root, "terrain", self.wallRings)
         self.initiate_players(root, "players")
         self.initiate_units(root, "units")
