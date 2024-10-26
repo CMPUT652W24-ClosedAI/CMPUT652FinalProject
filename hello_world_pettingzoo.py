@@ -42,8 +42,6 @@ def policy(observation):
     )
 
     return action
-
-
 def main():
     opponents = []
     render = False
