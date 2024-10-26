@@ -30,3 +30,11 @@ python hello_world.py
 ```
 
 If the `poetry install` command gets stuck on a Linux machine, [it may help to first run](https://github.com/python-poetry/poetry/issues/8623): `export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring`.
+
+## Linting Code
+
+- There is an action on this repository which automatically makes sure code is linted properly with black before it can be merged.
+```bash
+# To run the linter, use the following command:
+poetry run black .
+```
