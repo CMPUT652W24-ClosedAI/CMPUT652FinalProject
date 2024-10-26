@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        python-version: [ "3.9.7" ]
+        python-version: [ "3.9" ]
 
     steps:
       - uses: actions/checkout@v3
@@ -18,7 +18,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          poetry install
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --with dev
 
   lint:
     runs-on: ubuntu-latest
@@ -34,7 +36,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          poetry install
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --with dev
       - name: Lint with Black
         run: |
           python -m black . --check
