@@ -41,5 +41,4 @@ jobs:
           poetry install --with dev
       - name: Lint with Black
         run: |
-          poetry shell
-          python -m black . --check
+          poetry run black . --check
