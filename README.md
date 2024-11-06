@@ -6,9 +6,21 @@
 - Justin Rozeboom
 - Sam Scholnick-Hughes
 
+
+## Info
+
+Forked from https://github.com/Farama-Foundation/MicroRTS-Py at b6bf191 on Oct. 25, 2024
+
+
 ## Setup Instructions
 
 ## Get Started
+
+> [!note]
+> Andrew's Installation instructions notes can be found in docs/andrews-install-notes.md
+
+> [!note]
+> Pre-existing experiments can be found in ./experiments - and one had been preloaded for use in vscode by .vscode/launch.json
 
 Prerequisites:
 - Python 3.9.7 (use pyenv or dead snakes to manage your version)
@@ -17,8 +29,8 @@ Prerequisites:
 - FFmpeg (for video recording utilities)
 
 ```bash
-$ git clone --recursive https://github.com/Farama-Foundation/MicroRTS-Py.git && \
-cd MicroRTS-Py
+$ git clone --recursive https://github.com/CMPUT652W24-ClosedAI/CMPUT652FinalProject.git && \
+cd CMPUT652FinalProject
 poetry install
 # The `poetry install` command above creates a virtual environment for us, in which all the dependencies are installed.
 # We can use `poetry shell` to create a new shell in which this environment is activated. Once we are done working with

@@ -1,0 +1,22 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Experiment 1: ppo_gridnet_large",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "experiments/ppo_gridnet_large.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--total-timesteps", "300000000",
+        "--num-bot-envs", "24",
+        "--num-selfplay-envs", "0",
+        "--partial-obs", "False",
+        "--prod-mode"
+      ]
+    }
+  ]
+}
