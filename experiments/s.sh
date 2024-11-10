@@ -1,3 +1,25 @@
+# NOTES: The --prod-mode is used to run the wanddb evaluator. The new version of
+# wanddb which works with our current numpy version will ask us to make an
+# account every time we want to use it. It may prove useful but for now we can
+# just disable it by not adding the --prod-mode flag.
+
+
+# Andrew added
+python ppo_gridnet_eval.py \
+    --total-timesteps 300000000 \
+    --agent-model-path agent_sota.pt \
+    --num-bot-envs 1 \
+    --num-selfplay-envs 0 \
+    --partial-obs False \
+    --capture-video
+
+python ppo_gridnet_eval.py \
+    --agent-model-path gym-microrts-static-files/agent_sota.pt \
+    --ai randomBiasedAI \
+
+# num-bot-envs is number f games
+# 
+
 # full obs
 ## training against diverse bots
 xvfb-run -a python ppo_gridnet.py \

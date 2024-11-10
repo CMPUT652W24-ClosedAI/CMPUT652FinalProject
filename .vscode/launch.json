@@ -4,19 +4,33 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+
     {
       "name": "Experiment 1: ppo_gridnet_large",
       "type": "debugpy",
+      "cwd": "${workspaceFolder}/experiments",
       "request": "launch",
-      "program": "experiments/ppo_gridnet_large.py",
+      "program": "ppo_gridnet_large.py",
       "console": "integratedTerminal",
       "args": [
         "--total-timesteps", "300000000",
         "--num-bot-envs", "24",
         "--num-selfplay-envs", "0",
-        "--partial-obs", "False",
-        "--prod-mode"
+        "--partial-obs", "False"
       ]
-    }
+    },
+    {
+      "name": "Experiment 2: evaluate sota",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/experiments",
+      "request": "launch",
+      "program": "ppo_gridnet_eval.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--agent-model-path", "gym-microrts-static-files/agent_sota.pt",
+        "--ai", "randomBiasedAI",
+        "--play-video",
+      ]
+    },
   ]
 }
