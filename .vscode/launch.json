@@ -24,13 +24,11 @@
       "type": "debugpy",
       "cwd": "${workspaceFolder}/experiments",
       "request": "launch",
-      "program": "ppo_gridnet_eval.py",
+      "program": "ppo_gridnet_andrew.py",
       "console": "integratedTerminal",
       "args": [
         "--agent-model-path", "gym-microrts-static-files/agent_sota.pt",
         "--agent2-model-path", "gym-microrts-static-files/agent_sota.pt",
-        "--ai", "randomBiasedAI",
-        "--play-video",
       ]
     },
   ]

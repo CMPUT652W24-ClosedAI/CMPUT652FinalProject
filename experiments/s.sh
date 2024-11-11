@@ -5,7 +5,13 @@
 
 
 # Andrew added
-python ppo_gridnet_eval.py \
+
+python ppo_gridnet_andrew.py \
+    --agent-model-path gym-microrts-static-files/agent_sota.pt \
+    --agent2-model-path gym-microrts-static-files/agent_sota.pt \
+
+
+python ppo_gridnet_large.py \
     --total-timesteps 300000000 \
     --agent-model-path agent_sota.pt \
     --num-bot-envs 1 \
@@ -13,10 +19,6 @@ python ppo_gridnet_eval.py \
     --partial-obs False \
     --capture-video
 
-python ppo_gridnet_eval.py \
-    --agent-model-path gym-microrts-static-files/agent_sota.pt \
-    --agent2-model-path gym-microrts-static-files/agent_sota.pt \
-    --ai randomBiasedAI \
 
 # num-bot-envs is number f games
 # 
