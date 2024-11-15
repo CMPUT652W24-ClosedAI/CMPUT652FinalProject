@@ -60,8 +60,27 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
 
     return (map_tensor, invalid_actions_map)
 
+def update_xml_map(file_path, xml_map, layer_update: LayerName, layer_old: LayerName, x_cord, y_cord):
+    root = xml_map.getroot()
+    map_height = int(root.attrib['height'])
+
+    if layer_update.value < 2:
+        terrain = root.find('terrain').text.strip()
+        update_index = y_cord * map_height + x_cord
+        updated_terrain = list(terrain)
+        updated_terrain[update_index] = layer_update.value
+
+
+
+    xml_map.write(file_path)
+
+
+def update_tensor_map():
+    print("Not implemented")
+
 
 if __name__ == "__main__":
     file_path = "basesWorkers16x16.xml"
     xml_map = ET.parse(file_path)
     convert_xml(xml_map)
+    update_xml_map(file_path, xml_map, LayerName.EMPTY, 1, 10, LayerName.TWENTY_RESOURCES)
