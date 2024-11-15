@@ -1,3 +1,5 @@
+from xml.etree.ElementTree import ElementTree
+
 import torch
 from functorch.dim import Tensor
 import xml.etree.ElementTree as ET
@@ -6,8 +8,7 @@ from generator.enums import LayerName
 
 ALLOWED_RESOURCE_VALUES = {5, 10, 15, 20}
 
-def convert_xml(file_path: str) -> Tensor:
-    xml_map = ET.parse(file_path)
+def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
     root = xml_map.getroot()
     map_width = int(root.attrib['width'])
     map_height = int(root.attrib['height'])
@@ -45,16 +46,22 @@ def convert_xml(file_path: str) -> Tensor:
         y_cord = int(resource.attrib["x"])
         resource_amount = int(resource.attrib["resources"])
         layer = LayerName.FIVE_RESOURCES if resource_amount == 5 else LayerName.TEN_RESOURCES if resource_amount == 10 else LayerName.FIFTEEN_RESOURCES if resource_amount == 15 else LayerName.TWENTY_RESOURCES
-
+        map_tensor[layer.value, x_cord, y_cord] = 1.0
 
     """
     Extract Invalid Actions
     This is changing the tiles that workers and bases are initially on.
     """
+    invalid_actions_map = torch.zeros_like(wall_tensor, dtype=torch.float32)
+    for other in other_units:
+        x_cord = int(other.attrib["x"])
+        y_cord = int(other.attrib["x"])
+        invalid_actions_map[ x_cord, y_cord] = 1.0
 
-
+    return (map_tensor, invalid_actions_map)
 
 
 if __name__ == "__main__":
     file_path = "basesWorkers16x16.xml"
-    convert_xml(file_path)
+    xml_map = ET.parse(file_path)
+    convert_xml(xml_map)
