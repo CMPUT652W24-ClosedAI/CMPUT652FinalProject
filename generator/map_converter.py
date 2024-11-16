@@ -69,22 +69,36 @@ def update_xml_map(file_path, xml_map, layer_update: LayerName, layer_old: Layer
     terrain_text = terrain_node.text
     update_index = y_cord * map_height + x_cord
     updated_terrain = terrain_text[:update_index] +( "1" if layer_update.value == 1 else "0") + terrain_text[update_index + 1:]
-    terrain_node.text = updated_terrain
+    terrain_node.text = updated_terrain\
 
+    # Unit updates
+    units = root.find('units')
+    resource_amount = 5 if layer_update == LayerName.FIVE_RESOURCES else 10 if layer_update == LayerName.TEN_RESOURCES else 15 if layer_update == LayerName.FIFTEEN_RESOURCES else 20
+    resource_amount = str(resource_amount)
 
     # Change Existing Resource Amount
     if layer_old.value > 1 and layer_update.value > 1:
-        resource_amount = 5 if layer_update == LayerName.FIVE_RESOURCES else 10 if layer_update == LayerName.TEN_RESOURCES else 15 if layer_update == LayerName.FIFTEEN_RESOURCES else 20
-        for unit in root.findall(".//rts.units.Unit"):
+        for unit in units:
             if int(unit.attrib.get('x')) == x_cord and int(unit.attrib.get('y')) == y_cord:
-                unit.set('resources', str(resource_amount))
+                unit.set('resources', resource_amount)
                 break
-    # TODO: Add new resource tag
     elif layer_old.value < 2 and layer_update.value > 1:
-        print("Not Implemented yet")
-
-    # TODO: Remove old resource tag
-
+        # We need to add a new sub-element to the XML
+        ET.SubElement(
+            units,
+            "rts.units.Unit",
+            type="Resource",
+            player="-1",
+            x=str(x_cord),
+            y=str(y_cord),
+            resources=resource_amount,
+            hitpoints="1",
+        )
+    elif layer_old.value > 1 and layer_update.value < 2:
+        for unit in units:
+            if int(unit.attrib.get('x')) == x_cord and int(unit.attrib.get('y')) == y_cord:
+                units.remove(unit)
+                break
 
     xml_map.write(file_path)
 
