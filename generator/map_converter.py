@@ -65,18 +65,19 @@ def update_xml_map(file_path, xml_map, layer_update: LayerName, layer_old: Layer
     map_height = int(root.attrib['height'])
 
     # Update terrain text
-    terrain = root.find('terrain').text.strip()
+    terrain_node = root.find('terrain')
+    terrain_text = terrain_node.text
     update_index = y_cord * map_height + x_cord
-    updated_terrain = list(terrain)
-    updated_terrain[update_index] = 1 if layer_update.value == 1 else 0
-    terrain.text = text(updated_terrain)
+    updated_terrain = terrain_text[:update_index] +( "1" if layer_update.value == 1 else "0") + terrain_text[update_index + 1:]
+    terrain_node.text = updated_terrain
+
 
     # Change Existing Resource Amount
     if layer_old.value > 1 and layer_update.value > 1:
         resource_amount = 5 if layer_update == LayerName.FIVE_RESOURCES else 10 if layer_update == LayerName.TEN_RESOURCES else 15 if layer_update == LayerName.FIFTEEN_RESOURCES else 20
         for unit in root.findall(".//rts.units.Unit"):
             if int(unit.attrib.get('x')) == x_cord and int(unit.attrib.get('y')) == y_cord:
-                unit.set('resources', resource_amount)
+                unit.set('resources', str(resource_amount))
                 break
     # TODO: Add new resource tag
     elif layer_old.value < 2 and layer_update.value > 1:
@@ -92,4 +93,4 @@ if __name__ == "__main__":
     file_path = "testMap.xml"
     xml_map = ET.parse(file_path)
     convert_xml(xml_map)
-    update_xml_map(file_path, xml_map, LayerName.FIVE_RESOURCES, LayerName.TWENTY_RESOURCES, 15, 15)
+    update_xml_map(file_path, xml_map, LayerName.TWENTY_RESOURCES, LayerName.FIVE_RESOURCES, 15, 15)
