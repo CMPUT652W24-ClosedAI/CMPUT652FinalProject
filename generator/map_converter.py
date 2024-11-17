@@ -89,8 +89,9 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
 
 
 def update_xml_map(
-    file_path, xml_map, layer_update: LayerName, layer_old: LayerName, x_cord, y_cord
+    file_path, layer_update: LayerName, layer_old: LayerName, x_cord, y_cord
 ):
+    xml_map = ET.parse(file_path)
     root = xml_map.getroot()
     map_height = int(root.attrib["height"])
 
@@ -151,17 +152,17 @@ def update_xml_map(
 
 
 if __name__ == "__main__":
-    file_path = "testMap.xml"
+    file_path = "defaultMap.xml"
     xml_map = ET.parse(file_path)
     convert_xml(xml_map)
 
     # Change existing resource amount
     update_xml_map(
-        file_path, xml_map, LayerName.TWENTY_RESOURCES, LayerName.FIVE_RESOURCES, 15, 15
+        file_path, LayerName.TWENTY_RESOURCES, LayerName.FIVE_RESOURCES, 15, 15
     )
     # Remove old tag
-    update_xml_map(file_path, xml_map, LayerName.WALL, LayerName.TEN_RESOURCES, 0, 0)
+    update_xml_map(file_path, LayerName.WALL, LayerName.TEN_RESOURCES, 0, 0)
     # Add new tag
     update_xml_map(
-        file_path, xml_map, LayerName.FIFTEEN_RESOURCES, LayerName.EMPTY, 8, 4
+        file_path, LayerName.FIFTEEN_RESOURCES, LayerName.EMPTY, 8, 4
     )

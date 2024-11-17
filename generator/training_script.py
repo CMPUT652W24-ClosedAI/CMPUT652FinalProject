@@ -3,11 +3,14 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
+from generator.enums import LayerName
+from generator.get_fairness_score import squared_value_difference
+from generator.map_converter import update_xml_map
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
 
 
-def train():
+def train(map_path: str):
     policy_net = Unet()
     target_net = Unet()
     target_net.load_state_dict(policy_net.state_dict())
@@ -41,7 +44,10 @@ def train():
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
 
-            reward = torch.tensor(sym_score(state) - sym_score(old_state))
+            # TODO: Maybe move this to reward at the end
+            reward = torch.tensor(sym_score(state) - sym_score(old_state) - squared_value_difference(map_path))
+            old_index = (old_state[:, action[1], action[2]] == 1).nonzero(as_tuple=True)[0].item()
+            update_xml_map("../" + map_path, LayerName(action[0]), LayerName(old_index), action[1], action[2])
 
             if step == 63:
                 terminal = torch.tensor(1)
@@ -90,4 +96,5 @@ def sym_score(x):
     return torch.sum(x != reflected_x)
 
 if __name__ == '__main__':
-    train()
+    # ../maps/16x16/defaultMap.xml
+    train("maps/16x16/defaultMap.xml")
