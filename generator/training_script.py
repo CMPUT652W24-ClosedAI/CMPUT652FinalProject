@@ -1,3 +1,5 @@
+import shutil
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,7 +12,7 @@ from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
 
 
-def train(map_path: str):
+def train(map_path: str, end_step_only: bool = True):
     policy_net = Unet()
     target_net = Unet()
     target_net.load_state_dict(policy_net.state_dict())
@@ -27,6 +29,7 @@ def train(map_path: str):
         blank_planes = torch.zeros(5, 16, 16)
         empty_plane = torch.ones(1, 16, 16)
         state = torch.cat((empty_plane, blank_planes), dim=0)
+        shutil.copy("defaultMap.xml", "tempMap.xml")
         for step in range(64):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
@@ -45,9 +48,10 @@ def train(map_path: str):
             state[action[0], action[1], action[2]] = 1
 
             # TODO: Maybe move this to reward at the end
-            reward = torch.tensor(sym_score(state) - sym_score(old_state) - squared_value_difference(map_path))
-            old_index = (old_state[:, action[1], action[2]] == 1).nonzero(as_tuple=True)[0].item()
-            update_xml_map("../" + map_path, LayerName(action[0]), LayerName(old_index), action[1], action[2])
+            old_index = (old_state[:, action[1].item(), action[2].item()] == 1).nonzero(as_tuple=True)[0].item()
+            update_xml_map("tempMap.xml", LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item())
+            shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/temp.xml")
+            reward = torch.tensor(sym_score(state) - sym_score(old_state) - 0 if end_step_only else squared_value_difference("maps/16x16/temp.xml"))
 
             if step == 63:
                 terminal = torch.tensor(1)
@@ -97,4 +101,4 @@ def sym_score(x):
 
 if __name__ == '__main__':
     # ../maps/16x16/defaultMap.xml
-    train("maps/16x16/defaultMap.xml")
+    train("defaultMap.xml", end_step_only=False)
