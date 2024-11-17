@@ -33,6 +33,7 @@ def squared_value_difference(
         ai2s=ais,
         map_paths=[map_path],
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0]),
+        autobuild=False,
     )
     assert isinstance(
         envs.action_space, MultiDiscrete
@@ -50,7 +51,6 @@ def squared_value_difference(
     agent2.load_state_dict(torch.load(model_path, map_location=device))
     agent2.eval()
 
-    envs.render()
     # ALGO LOGIC: put action logic here
     with torch.no_grad():
         invalid_action_masks = torch.tensor(np.array(envs.get_action_mask())).to(device)
@@ -74,9 +74,6 @@ def squared_value_difference(
             invalid_action_masks=p2_mask_reversed,
             device=device,
         )
-
-    # TODO: I am skipping this but likely causing a memory leak
-    # envs.close()
 
     return (p1_value - p2_value) ** 2
 
