@@ -3,10 +3,11 @@ import shutil
 import numpy as np
 import torch
 import torch.nn as nn
+import xml.etree.ElementTree as ET
 from tqdm import tqdm
 
 from generator.enums import LayerName
-from generator.map_utils import update_xml_map
+from generator.map_utils import update_xml_map, convert_xml
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
@@ -25,18 +26,27 @@ def train(map_path: str):
     tau = 0.005
 
     for episode in tqdm(range(100_000)):
-        epsilon = max(epsilon - 1 / 100_000, 0.05)
-        blank_planes = torch.zeros(5, 16, 16)
-        empty_plane = torch.ones(1, 16, 16)
-        state = torch.cat((empty_plane, blank_planes), dim=0)
+        # Test Using convert xml
         shutil.copy("defaultMap.xml", "tempMap.xml")
+        file_path = "tempMap.xml"
+        xml_map = ET.parse(file_path)
+        tensor_map, invalid_actions_mask = convert_xml(xml_map)
+
+        epsilon = max(epsilon - 1 / 100_000, 0.05)
+
+        # OLD
+        # blank_planes = torch.zeros(5, 16, 16)
+        # empty_plane = torch.ones(1, 16, 16)
+        # state = torch.cat((empty_plane, blank_planes), dim=0)
+        state = tensor_map
+
         id = 100
         for step in range(64):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
                 # TODO: account for other invalid actions when using starting map
                 # mask q_values
-                q_values = q_values * (1 - state)
+                q_values = q_values * (1 - state) * (1 - invalid_actions_mask[None, :, :])
                 action = torch.tensor(torch.unravel_index(torch.argmax(q_values), q_values.shape))
             else:
                 x = np.random.randint(16)
@@ -57,7 +67,8 @@ def train(map_path: str):
             if step == 63:
                 terminal = torch.tensor(1)
                 shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml")
-                reward -= squared_value_difference("maps/16x16/tempMap.xml")
+                difference = squared_value_difference("maps/16x16/tempMap.xml")
+                reward -= difference
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
