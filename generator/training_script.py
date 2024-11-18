@@ -25,14 +25,14 @@ def train(map_path: str):
     epsilon = 1.0
     tau = 0.005
 
-    for episode in tqdm(range(1_000)):
+    for episode in tqdm(range(10_000)):
         # Test Using convert xml
         shutil.copy("defaultMap.xml", "tempMap.xml")
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
 
-        epsilon = max(epsilon - 1 / 100_000, 0.05)
+        epsilon = max(epsilon - 1 / 10_000, 0.05)
         state = tensor_map
 
         id = 100
@@ -113,7 +113,7 @@ def train(map_path: str):
                     target_net_state_dict[key] = policy_net_state_dict[key] * tau + target_net_state_dict[key] * (
                                 1 - tau)
                 target_net.load_state_dict(target_net_state_dict)
-    torch.save(policy_net.state_dict(), "policy_net.pt")
+    torch.save(policy_net.state_dict(), "policy_net_longer_training.pt")
 
 def sym_score(x):
     x = torch.argmax(x, dim=-3)
