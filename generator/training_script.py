@@ -6,13 +6,13 @@ import torch.nn as nn
 from tqdm import tqdm
 
 from generator.enums import LayerName
-from generator.get_fairness_score import squared_value_difference
-from generator.map_converter import update_xml_map
+from generator.map_utils import update_xml_map
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
+from generator.value_function_extraction import squared_value_difference
 
 
-def train(map_path: str, end_step_only: bool = True):
+def train(map_path: str):
     policy_net = Unet()
     target_net = Unet()
     target_net.load_state_dict(policy_net.state_dict())
@@ -30,9 +30,11 @@ def train(map_path: str, end_step_only: bool = True):
         empty_plane = torch.ones(1, 16, 16)
         state = torch.cat((empty_plane, blank_planes), dim=0)
         shutil.copy("defaultMap.xml", "tempMap.xml")
+        id = 100
         for step in range(64):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
+                # TODO: account for other invalid actions when using starting map
                 # mask q_values
                 q_values = q_values * (1 - state)
                 action = torch.tensor(torch.unravel_index(torch.argmax(q_values), q_values.shape))
@@ -47,14 +49,15 @@ def train(map_path: str, end_step_only: bool = True):
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
 
-            # TODO: Maybe move this to reward at the end
             old_index = (old_state[:, action[1].item(), action[2].item()] == 1).nonzero(as_tuple=True)[0].item()
-            update_xml_map("tempMap.xml", LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item())
-            shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/temp.xml")
-            reward = torch.tensor(sym_score(state) - sym_score(old_state) - 0 if end_step_only else squared_value_difference("maps/16x16/temp.xml"))
+            update_xml_map("tempMap.xml", LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item(), id)
+            id += 1
+            reward = torch.tensor(sym_score(state) - sym_score(old_state)) / 2
 
             if step == 63:
                 terminal = torch.tensor(1)
+                shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml")
+                reward -= squared_value_difference("maps/16x16/tempMap.xml")
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
@@ -101,4 +104,4 @@ def sym_score(x):
 
 if __name__ == '__main__':
     # ../maps/16x16/defaultMap.xml
-    train("defaultMap.xml", end_step_only=False)
+    train("defaultMap.xml")

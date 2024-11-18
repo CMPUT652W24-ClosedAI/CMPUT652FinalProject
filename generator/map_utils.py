@@ -58,21 +58,9 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
 
     for resource in resources:
         x_cord = int(resource.attrib["x"])
-        y_cord = int(resource.attrib["x"])
+        y_cord = int(resource.attrib["y"])
         resource_amount = int(resource.attrib["resources"])
-        layer = (
-            LayerName.FIVE_RESOURCES
-            if resource_amount == 5
-            else (
-                LayerName.TEN_RESOURCES
-                if resource_amount == 10
-                else (
-                    LayerName.FIFTEEN_RESOURCES
-                    if resource_amount == 15
-                    else LayerName.TWENTY_RESOURCES
-                )
-            )
-        )
+        layer = LayerName(int(resource_amount / 5) + 1)
         map_tensor[layer.value, x_cord, y_cord] = 1.0
 
     """
@@ -89,7 +77,7 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
 
 
 def update_xml_map(
-    file_path, layer_update: LayerName, layer_old: LayerName, x_cord, y_cord
+    file_path, layer_update: LayerName, layer_old: LayerName, x_cord: int, y_cord: int, id: int
 ):
     xml_map = ET.parse(file_path)
     root = xml_map.getroot()
@@ -133,6 +121,7 @@ def update_xml_map(
             units,
             "rts.units.Unit",
             type="Resource",
+            ID=str(id),
             player="-1",
             x=str(x_cord),
             y=str(y_cord),
@@ -151,18 +140,27 @@ def update_xml_map(
     xml_map.write(file_path)
 
 
+def tensor_to_xml_map(map_tensor: Tensor):
+    root = ET.Element(
+        "rts.PhysicalGameState", width=str(map_tensor.shape[1]), height=str(map_tensor.shape[2])
+    )
+    terrain = ET.SubElement(root, "terrain")
+
+
 if __name__ == "__main__":
     file_path = "defaultMap.xml"
     xml_map = ET.parse(file_path)
-    convert_xml(xml_map)
+    map_tensor, invalid_actions = convert_xml(xml_map)
+    #
+    # # Change existing resource amount
+    # update_xml_map(
+    #     file_path, LayerName.TWENTY_RESOURCES, LayerName.FIVE_RESOURCES, 15, 15
+    # )
+    # # Remove old tag
+    # update_xml_map(file_path, LayerName.WALL, LayerName.TEN_RESOURCES, 0, 0)
+    # # Add new tag
+    # update_xml_map(
+    #     file_path, LayerName.FIFTEEN_RESOURCES, LayerName.EMPTY, 8, 4
+    # )
 
-    # Change existing resource amount
-    update_xml_map(
-        file_path, LayerName.TWENTY_RESOURCES, LayerName.FIVE_RESOURCES, 15, 15
-    )
-    # Remove old tag
-    update_xml_map(file_path, LayerName.WALL, LayerName.TEN_RESOURCES, 0, 0)
-    # Add new tag
-    update_xml_map(
-        file_path, LayerName.FIFTEEN_RESOURCES, LayerName.EMPTY, 8, 4
-    )
+    tensor_to_xml_map(map_tensor)

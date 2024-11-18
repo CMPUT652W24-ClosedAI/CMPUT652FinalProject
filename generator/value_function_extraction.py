@@ -80,4 +80,5 @@ def squared_value_difference(
 
 if __name__ == "__main__":
     print(squared_value_difference())
-    print(squared_value_difference())
+    print(squared_value_difference(map_path="maps/16x16/defaultMap.xml"))
+    print(squared_value_difference(map_path="maps/16x16/tempMap.xml"))
