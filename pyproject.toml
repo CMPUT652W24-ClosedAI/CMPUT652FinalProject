@@ -21,6 +21,7 @@ PettingZoo = "^1.16.0"
 torch = "^2.5.0"
 numpy = "2.0.2"
 black = "^24.10.0"
+tqdm = "^4.67.0"
 
 [tool.poetry.dev-dependencies]
 poetry-dynamic-versioning = "^0.13.0"
