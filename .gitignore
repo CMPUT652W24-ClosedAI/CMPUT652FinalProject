@@ -164,3 +164,6 @@ cython_debug/
 
 # MacOS Stuff
 **/.DS_Store
+
+# Project Things
+generator/tempMap.xml

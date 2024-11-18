@@ -137,6 +137,8 @@ def update_xml_map(
                 units.remove(unit)
                 break
 
+    # Hopefully fix formatting
+    ET.indent(root)
     xml_map.write(file_path)
 
 

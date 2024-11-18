@@ -44,13 +44,16 @@ def train(map_path: str):
         for step in range(64):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
-                # TODO: account for other invalid actions when using starting map
                 # mask q_values
-                q_values = q_values * (1 - state) * (1 - invalid_actions_mask[None, :, :])
+                q_values = q_values * (1 - state) * (1 - invalid_actions_mask)[None, :, :]
                 action = torch.tensor(torch.unravel_index(torch.argmax(q_values), q_values.shape))
             else:
-                x = np.random.randint(16)
-                y = np.random.randint(16)
+                while True:
+                    x = np.random.randint(16)
+                    y = np.random.randint(16)
+                    # Mask Invalid Actions
+                    if invalid_actions_mask[x, y] != 1.0:
+                        break
                 plane = np.random.randint(5)
                 if state[plane, x, y] == 1:
                     plane = 5
@@ -59,7 +62,15 @@ def train(map_path: str):
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
 
-            old_index = (old_state[:, action[1].item(), action[2].item()] == 1).nonzero(as_tuple=True)[0].item()
+            test_index = (old_state[:, action[1].item(), action[2].item()] == 1).nonzero(as_tuple=True)[0]
+
+            # Sometimes happens when a square is marked as empty and has a resource
+            # TODO: This is likely because of a bug elsewhere. This should be fixed.
+            if test_index.shape[0] == 2:
+                old_index = test_index[1].item()
+            else:
+                old_index = test_index.item()
+
             update_xml_map("tempMap.xml", LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item(), id)
             id += 1
             reward = torch.tensor(sym_score(state) - sym_score(old_state)) / 2
@@ -68,7 +79,7 @@ def train(map_path: str):
                 terminal = torch.tensor(1)
                 shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml")
                 difference = squared_value_difference("maps/16x16/tempMap.xml")
-                reward -= difference
+                reward -= difference[0].item()
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
