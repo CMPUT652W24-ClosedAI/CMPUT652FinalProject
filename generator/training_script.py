@@ -13,7 +13,7 @@ from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
 
-def train(map_path: str):
+def train(map_path: str, num_episodes: int, output_model_path: str):
     policy_net = Unet()
     target_net = Unet()
     target_net.load_state_dict(policy_net.state_dict())
@@ -25,14 +25,14 @@ def train(map_path: str):
     epsilon = 1.0
     tau = 0.005
 
-    for episode in tqdm(range(4_000)):
+    for episode in tqdm(range(num_episodes)):
         # Test Using convert xml
         shutil.copy("defaultMap.xml", "tempMap.xml")
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
 
-        epsilon = max(epsilon - 1 / 4_000, 0.05)
+        epsilon = max(epsilon - 1 / num_episodes, 0.05)
         state = tensor_map
 
         id = 100
@@ -68,13 +68,13 @@ def train(map_path: str):
 
             update_xml_map("tempMap.xml", LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item(), id)
             id += 1
-            reward = torch.tensor(sym_score(state) - sym_score(old_state)) / 2
+            reward = torch.tensor(0.0)
 
             if step == 63:
                 terminal = torch.tensor(1)
                 shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml")
                 difference = squared_value_difference("maps/16x16/tempMap.xml")
-                reward -= (difference[0].item() * 1/10)
+                reward = sym_score(state) - difference[0].item()
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
@@ -113,7 +113,7 @@ def train(map_path: str):
                     target_net_state_dict[key] = policy_net_state_dict[key] * tau + target_net_state_dict[key] * (
                                 1 - tau)
                 target_net.load_state_dict(target_net_state_dict)
-    torch.save(policy_net.state_dict(), "policy_net_longer_training.pt")
+    torch.save(policy_net.state_dict(), output_model_path)
 
 def sym_score(x):
     x = torch.argmax(x, dim=-3)
@@ -121,4 +121,4 @@ def sym_score(x):
     return torch.sum(x != reflected_x)
 
 if __name__ == '__main__':
-    train("defaultMap.xml")
+    train("defaultMap.xml", 10_000, "policy_net_updated_reward.pt")

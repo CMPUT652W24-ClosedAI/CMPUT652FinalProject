@@ -21,7 +21,7 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
     state = tensor_map
     id = 100
 
-    for step in range(64):
+    for step in range(1000):
         with torch.no_grad():
             q_values = policy_net(state)
             # mask q_values
@@ -44,4 +44,4 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
 
 
 if __name__ == '__main__':
-    generate_map("defaultMap.xml", "outputMap_larger.xml", "policy_net_longer_training.pt")
+    generate_map("defaultMap.xml", "final_testing.xml", "policy_net_longer_training.pt")
