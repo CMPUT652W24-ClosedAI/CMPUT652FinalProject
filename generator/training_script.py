@@ -25,14 +25,14 @@ def train(map_path: str):
     epsilon = 1.0
     tau = 0.005
 
-    for episode in tqdm(range(10_000)):
+    for episode in tqdm(range(4_000)):
         # Test Using convert xml
         shutil.copy("defaultMap.xml", "tempMap.xml")
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
 
-        epsilon = max(epsilon - 1 / 10_000, 0.05)
+        epsilon = max(epsilon - 1 / 4_000, 0.05)
         state = tensor_map
 
         id = 100
@@ -74,7 +74,7 @@ def train(map_path: str):
                 terminal = torch.tensor(1)
                 shutil.copy("tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml")
                 difference = squared_value_difference("maps/16x16/tempMap.xml")
-                reward -= difference[0].item()
+                reward -= (difference[0].item() * 1/10)
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
