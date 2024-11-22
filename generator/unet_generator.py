@@ -10,28 +10,37 @@ class Unet(nn.Module):
 
         self.block_1 = nn.Sequential(
             nn.Conv2d(6, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
         )
 
         self.block_2 = nn.Sequential(
             nn.Conv2d(64, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
         )
 
         self.block_3 = nn.Sequential(
             nn.Conv2d(128, 256, 3, padding="same"),
+            nn.LayerNorm(256),
             nn.ReLU(),
             nn.Conv2d(256, 256, 3, padding="same"),
+            nn.LayerNorm(256),
             nn.ReLU(),
             nn.Conv2d(256, 256, 3, padding="same"),
+            nn.LayerNorm(256),
             nn.ReLU(),
         )
 
@@ -39,10 +48,13 @@ class Unet(nn.Module):
 
         self.up_block_1 = nn.Sequential(
             nn.Conv2d(256, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
             nn.Conv2d(128, 128, 3, padding="same"),
+            nn.LayerNorm(128),
             nn.ReLU(),
         )
 
@@ -50,10 +62,13 @@ class Unet(nn.Module):
 
         self.up_block_2 = nn.Sequential(
             nn.Conv2d(128, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding="same"),
+            nn.LayerNorm(64),
             nn.ReLU(),
         )
 
