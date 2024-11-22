@@ -21,16 +21,20 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
     state = tensor_map
     id = 100
 
-    for step in range(1000):
+    for step in range(64):
         with torch.no_grad():
             q_values = policy_net(state)
             # mask q_values
             q_values = q_values * (1 - state) * (1 - invalid_actions_mask)[None, :, :]
-            action = torch.tensor(torch.unravel_index(torch.argmax(q_values), q_values.shape))
+            action = torch.tensor(
+                torch.unravel_index(torch.argmax(q_values), q_values.shape)
+            )
             old_state = state.clone()
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
-            test_index = (old_state[:, action[1].item(), action[2].item()] == 1).nonzero(as_tuple=True)[0]
+            test_index = (
+                old_state[:, action[1].item(), action[2].item()] == 1
+            ).nonzero(as_tuple=True)[0]
 
             # Sometimes happens when a square is marked as empty and has a resource
             # TODO: This is likely because of a bug elsewhere. This should be fixed.
@@ -39,9 +43,20 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
             else:
                 old_index = test_index.item()
 
-            update_xml_map(output_map_path, LayerName(action[0].item()), LayerName(old_index), action[1].item(), action[2].item(), id)
+            update_xml_map(
+                output_map_path,
+                LayerName(action[0].item()),
+                LayerName(old_index),
+                action[1].item(),
+                action[2].item(),
+                id,
+            )
             id += 1
 
 
-if __name__ == '__main__':
-    generate_map("defaultMap.xml", "final_testing.xml", "policy_net_longer_training.pt")
+if __name__ == "__main__":
+    generate_map(
+        "input_maps/defaultMap.xml",
+        "generated_maps/unfair_only_longer_training.xml",
+        "models/policy_net_unfair_longer_training.pt",
+    )

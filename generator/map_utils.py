@@ -77,7 +77,12 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
 
 
 def update_xml_map(
-    file_path, layer_update: LayerName, layer_old: LayerName, x_cord: int, y_cord: int, id: int
+    file_path,
+    layer_update: LayerName,
+    layer_old: LayerName,
+    x_cord: int,
+    y_cord: int,
+    id: int,
 ):
     xml_map = ET.parse(file_path)
     root = xml_map.getroot()
@@ -144,13 +149,15 @@ def update_xml_map(
 
 def tensor_to_xml_map(map_tensor: Tensor):
     root = ET.Element(
-        "rts.PhysicalGameState", width=str(map_tensor.shape[1]), height=str(map_tensor.shape[2])
+        "rts.PhysicalGameState",
+        width=str(map_tensor.shape[1]),
+        height=str(map_tensor.shape[2]),
     )
     terrain = ET.SubElement(root, "terrain")
 
 
 if __name__ == "__main__":
-    file_path = "defaultMap.xml"
+    file_path = "input_maps/defaultMap.xml"
     xml_map = ET.parse(file_path)
     map_tensor, invalid_actions = convert_xml(xml_map)
     #

@@ -5,9 +5,8 @@ import random
 import numpy as np
 import torch
 from gym.spaces import MultiDiscrete
-from stable_baselines3.common.vec_env import VecMonitor
 
-from experiments.ppo_gridnet import MicroRTSStatsRecorder, Agent
+from experiments.ppo_gridnet import Agent
 from gym_microrts import microrts_ai  # noqa
 from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
@@ -81,4 +80,5 @@ def squared_value_difference(
 if __name__ == "__main__":
     print(squared_value_difference())
     print(squared_value_difference(map_path="maps/16x16/defaultMap.xml"))
-    print(squared_value_difference(map_path="maps/16x16/tempMap.xml"))
+    print(squared_value_difference(map_path="maps/16x16/asym-map-05.xml"))
+    print(squared_value_difference(map_path="maps/16x16/very_different_map.xml"))
