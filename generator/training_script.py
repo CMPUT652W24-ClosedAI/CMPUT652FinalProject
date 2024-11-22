@@ -1,9 +1,12 @@
+import math
 import shutil
 
 import numpy as np
 import torch
 import torch.nn as nn
 import xml.etree.ElementTree as ET
+
+from fontTools.varLib.avarPlanner import SAMPLES
 from tqdm import tqdm
 
 from generator.enums import LayerName
@@ -151,10 +154,22 @@ def sym_score(x):
     return torch.sum(x != reflected_x)
 
 
+def scale_reward(reward, reward_trace, gamma, p, counter):
+    reward_trace = gamma * reward_trace + reward
+    p, sigma, counter = sample_mean_var(reward_trace, 0, p, counter)
+    return reward / math.sqrt(sigma + 1e-8), reward_trace, p, counter
+
+def sample_mean_var(x, mean, estimate, counter):
+    counter += 1
+    update_mean = mean + (1/counter) * (x - mean)
+    estimate += (x - mean)(x - update_mean)
+    sigma = estimate / (counter - 1) if counter > 2 else 1
+    return update_mean, sigma, counter
+
+
 if __name__ == "__main__":
     train(
         "input_maps/defaultMap.xml",
-        5_000,
-        "models/policy_net_unfair_longer_training.pt",
-        False,
+        1_000,
+        "models/policy_net_with_layer_norm.pt",
     )
