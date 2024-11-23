@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import xml.etree.ElementTree as ET
 
-from fontTools.varLib.avarPlanner import SAMPLES
 from tqdm import tqdm
 
 from generator.enums import LayerName
@@ -32,6 +31,10 @@ def train(
     # Hyperparameters
     epsilon = 1.0
     tau = 0.005
+
+    fairness_reward_trace, asym_reward_trace = 0.0, 0.0
+    estimated_fairness_average, estimated_asym_average = 0.0, 0.0
+    fairness_counter, asym_counter = 1, 1
 
     for episode in tqdm(range(num_episodes)):
         # Test Using convert xml
@@ -95,13 +98,16 @@ def train(
 
             if step == 63:
                 terminal = torch.tensor(1)
-                reward = sym_score(state).float()
+                sym_score_output = sym_score(state).float()
+                scaled_sym_score, asym_reward_trace, estimated_asym_average, asym_counter = scale_reward(sym_score_output.item(), asym_reward_trace, estimated_asym_average, asym_counter)
+                reward += scaled_sym_score
                 if use_fairness_score:
                     shutil.copy(
                         "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
                     )
-                    difference = squared_value_difference("maps/16x16/tempMap.xml")
-                    reward -= difference[0, 0]
+                    difference = squared_value_difference("maps/16x16/tempMap.xml")[0, 0]
+                    scaled_fairness_score, fairness_reward_trace, estimated_fairness_average, fairness_counter = scale_reward(difference, fairness_reward_trace, estimated_fairness_average, fairness_counter)
+                    reward -= scaled_fairness_score
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
@@ -154,16 +160,19 @@ def sym_score(x):
     return torch.sum(x != reflected_x)
 
 
-def scale_reward(reward, reward_trace, gamma, p, counter):
+def scale_reward(reward, reward_trace, estimated_mean, counter, gamma = 1):
     reward_trace = gamma * reward_trace + reward
-    p, sigma, counter = sample_mean_var(reward_trace, 0, p, counter)
-    return reward / math.sqrt(sigma + 1e-8), reward_trace, p, counter
+    estimated_mean, sigma, counter = sample_mean_var(
+        reward_trace, 0, estimated_mean, counter
+    )
+    return reward / math.sqrt(sigma + 1e-8), reward_trace, estimated_mean, counter
 
-def sample_mean_var(x, mean, estimate, counter):
+
+def sample_mean_var(reward_trace, mean, estimated_mean, counter):
     counter += 1
-    update_mean = mean + (1/counter) * (x - mean)
-    estimate += (x - mean)(x - update_mean)
-    sigma = estimate / (counter - 1) if counter > 2 else 1
+    update_mean = mean + (1 / counter) * (reward_trace - mean)
+    estimated_mean += (reward_trace - mean) * (reward_trace - update_mean)
+    sigma = estimated_mean / (counter - 1) if counter > 2 else 1
     return update_mean, sigma, counter
 
 
@@ -171,5 +180,5 @@ if __name__ == "__main__":
     train(
         "input_maps/defaultMap.xml",
         1_000,
-        "models/policy_net_with_layer_norm.pt",
+        "models/policy_net_with_layer_norm_and_scaled_rewards.pt",
     )
