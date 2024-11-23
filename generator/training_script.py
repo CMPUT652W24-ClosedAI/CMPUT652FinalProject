@@ -20,6 +20,7 @@ def train(
     num_episodes: int,
     output_model_path: str,
     alpha: float = 0.8,
+    use_wall_reward: bool = False,
 ):
     policy_net = Unet()
     target_net = Unet()
@@ -95,6 +96,9 @@ def train(
             )
             id += 1
             reward = torch.tensor(0.0)
+
+            if use_wall_reward and action[0] == 1:
+                reward += 0.1
 
             if step == 63:
                 terminal = torch.tensor(1)
