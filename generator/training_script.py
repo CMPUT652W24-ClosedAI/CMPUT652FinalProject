@@ -19,7 +19,7 @@ def train(
     map_path: str,
     num_episodes: int,
     output_model_path: str,
-    use_fairness_score: bool = True,
+    alpha: float = 0.8,
 ):
     policy_net = Unet()
     target_net = Unet()
@@ -100,14 +100,13 @@ def train(
                 terminal = torch.tensor(1)
                 sym_score_output = sym_score(state).float()
                 scaled_sym_score, asym_reward_trace, estimated_asym_average, asym_counter = scale_reward(sym_score_output.item(), asym_reward_trace, estimated_asym_average, asym_counter)
-                reward += scaled_sym_score
-                if use_fairness_score:
-                    shutil.copy(
-                        "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
-                    )
-                    difference = squared_value_difference("maps/16x16/tempMap.xml")[0, 0]
-                    scaled_fairness_score, fairness_reward_trace, estimated_fairness_average, fairness_counter = scale_reward(difference, fairness_reward_trace, estimated_fairness_average, fairness_counter)
-                    reward -= scaled_fairness_score
+                reward +=  alpha * scaled_sym_score
+                shutil.copy(
+                    "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
+                )
+                difference = squared_value_difference("maps/16x16/tempMap.xml")[0, 0]
+                scaled_fairness_score, fairness_reward_trace, estimated_fairness_average, fairness_counter = scale_reward(difference, fairness_reward_trace, estimated_fairness_average, fairness_counter)
+                reward -=  (1 - alpha) * scaled_fairness_score
             else:
                 terminal = torch.tensor(0)
             replay_buffer.push(old_state, action, state, reward, terminal)
@@ -180,5 +179,5 @@ if __name__ == "__main__":
     train(
         "input_maps/defaultMap.xml",
         1_000,
-        "models/policy_net_with_layer_norm_and_scaled_rewards.pt",
+        "models/policy_net_with_layer_norm_and_scaled_rewards_with_alpha_0.8.pt",
     )
