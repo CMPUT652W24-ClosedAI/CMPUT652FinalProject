@@ -1,4 +1,5 @@
 import math
+import random
 import shutil
 
 import numpy as np
@@ -16,12 +17,14 @@ from generator.value_function_extraction import squared_value_difference
 
 
 def train(
-    map_path: str,
-    num_episodes: int,
-    output_model_path: str,
+    map_paths=None,
+    num_episodes: int = 1_000,
+    output_model_path: str = "models/policy_net_default_values.pt",
     alpha: float = 0.8,
     use_wall_reward: bool = False,
 ):
+    if map_paths is None:
+        map_paths = ["input_maps/defaultMap.xml"]
     policy_net = Unet()
     target_net = Unet()
     target_net.load_state_dict(policy_net.state_dict())
@@ -39,7 +42,8 @@ def train(
 
     for episode in tqdm(range(num_episodes)):
         # Test Using convert xml
-        shutil.copy("input_maps/defaultMap.xml", "tempMap.xml")
+        map_path = random.choice(map_paths)
+        shutil.copy(map_path, "tempMap.xml")
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
@@ -181,7 +185,8 @@ def sample_mean_var(reward_trace, mean, estimated_mean, counter):
 
 if __name__ == "__main__":
     train(
-        "input_maps/defaultMap.xml",
+        ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
         1_000,
-        "models/policy_net_with_layer_norm_and_scaled_rewards_with_alpha_0.8.pt",
+        "models/policy_net_more_maps.pt",
+        0.8,
     )
