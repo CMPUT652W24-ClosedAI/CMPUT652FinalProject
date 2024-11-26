@@ -58,5 +58,5 @@ if __name__ == "__main__":
     generate_map(
         "input_maps/defaultMap.xml",
         "generated_maps/blank_map_reward_wth_alpha_and_wall_reward.xml",
-        "models/policy_net_with_layer_norm_and_scaled_rewards_with_alpha_0.8_and_wall_reward.pt",
+        "models/episode_reward/policy_net_with_layer_norm_and_scaled_rewards_with_alpha_0.8_and_wall_reward.pt",
     )

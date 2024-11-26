@@ -219,6 +219,6 @@ if __name__ == "__main__":
     train(
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
         1_000,
-        "models/policy_net_more_maps.pt",
+        "models/episode_reward/policy_net_more_maps.pt",
         0.8,
     )
