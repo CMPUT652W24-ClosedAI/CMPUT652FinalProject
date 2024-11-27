@@ -21,7 +21,7 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
     state = tensor_map
     id = 100
 
-    for step in range(1000):
+    for step in range(64):
         with torch.no_grad():
             q_values = policy_net(state)
             # mask q_values
@@ -57,6 +57,6 @@ def generate_map(input_map_path: str, output_map_path: str, model_path: str):
 if __name__ == "__main__":
     generate_map(
         "input_maps/defaultMap.xml",
-        "generated_maps/blank_map_reward_wth_alpha_and_wall_reward.xml",
-        "models/episode_reward/policy_net_with_layer_norm_and_scaled_rewards_with_alpha_0.8_and_wall_reward.pt",
+        "generated_maps/updated_reward_generator.xml",
+        "models/policy_net_non_episodic_rewards.pt",
     )

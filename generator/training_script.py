@@ -36,12 +36,14 @@ def train(
     epsilon = 1.0
     tau = 0.005
 
-    previous_sym_score = 0
-    previous_fairness_score = 0
+    previous_sym_score = torch.tensor(0.0)
+    previous_fairness_score = torch.tensor(0.0)
 
-    fairness_reward_trace, asym_reward_trace = 0.0, 0.0
-    estimated_fairness_average, estimated_asym_average = 0.0, 0.0
-    fairness_counter, asym_counter = 1, 1
+    fairness_reward_trace, asym_reward_trace = torch.tensor(0.0), torch.tensor(0.0)
+    estimated_fairness_average, estimated_asym_average = torch.tensor(
+        0.0
+    ), torch.tensor(0.0)
+    fairness_counter, asym_counter = torch.tensor(1), torch.tensor(1)
 
     for episode in tqdm(range(num_episodes)):
         # Test Using convert xml
@@ -106,20 +108,22 @@ def train(
             if use_wall_reward and action[0] == 1:
                 reward += 0.1
 
-            sym_score_output = sym_score(state).float().item()
+            sym_score_output = sym_score(state).float()
 
             shutil.copy(
                 "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
             )
-            fairness_score_output = squared_value_difference("maps/16x16/tempMap.xml")[
-                0, 0
-            ]
+            fairness_score_output = (
+                squared_value_difference("maps/16x16/tempMap.xml")
+                .reshape(-1)
+                .squeeze(0)
+            )
 
             sym_score_difference = sym_score_output - previous_sym_score
-            previous_sym_score = sym_score_output
+            previous_sym_score = torch.clone(sym_score_output)
 
             fairness_score_difference = fairness_score_output - previous_fairness_score
-            previous_fairness_score = fairness_score_output
+            previous_fairness_score = torch.clone(fairness_score_output)
 
             (
                 scaled_sym_score,
@@ -143,7 +147,7 @@ def train(
                 estimated_fairness_average,
                 fairness_counter,
             )
-            reward = torch.tensor(ratio * scaled_sym_score - (1 - ratio) * scaled_fairness_score)
+            reward = ratio * scaled_sym_score - (1 - ratio) * scaled_fairness_score
 
             if step == 63:
                 terminal = torch.tensor(1)
@@ -202,7 +206,7 @@ def sym_score(x):
 def scale_reward(reward, reward_trace, estimated_mean, counter, gamma=1):
     reward_trace = gamma * reward_trace + reward
     estimated_mean, sigma, counter = sample_mean_var(
-        reward_trace, 0, estimated_mean, counter
+        reward_trace, torch.tensor(0.0), estimated_mean, counter
     )
     return reward / math.sqrt(sigma + 1e-8), reward_trace, estimated_mean, counter
 
@@ -219,6 +223,6 @@ if __name__ == "__main__":
     train(
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
         1_000,
-        "models/episode_reward/policy_net_more_maps.pt",
+        "models/policy_net_non_episodic_rewards.pt",
         0.8,
     )

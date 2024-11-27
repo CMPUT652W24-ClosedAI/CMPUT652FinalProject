@@ -5,6 +5,7 @@ import random
 import numpy as np
 import torch
 from gym.spaces import MultiDiscrete
+from torch import Tensor
 
 from experiments.ppo_gridnet import Agent
 from gym_microrts import microrts_ai  # noqa
@@ -15,7 +16,7 @@ def squared_value_difference(
     map_path: str = "maps/16x16/basesWorkers16x16A.xml",
     seed: int = 0,
     model_path: str = "gym-microrts-static-files/agent_sota.pt",
-) -> float:
+) -> Tensor:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     random.seed(seed)
     np.random.seed(seed)
