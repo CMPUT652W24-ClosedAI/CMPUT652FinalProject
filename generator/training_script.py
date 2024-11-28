@@ -70,9 +70,12 @@ class Args:
             raise ValueError("modulo_value must be between 1 and 1000, inclusive.")
 
 
+def handle_error(message):
+    raise RuntimeError(f"ALERT: An error occurred in MapLoader: {message}")
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 controller = MapLoaderController()
+controller.set_error_callback(handle_error)
 
 def train(
     args: Args,
@@ -169,6 +172,8 @@ def train(
             )
             # run_maploader("tempMap.xml")
             # Start MapLoader with the first map
+            if len(replay_buffer) > args.replay_buffer_size:
+                a = 1
             if args.visualize_maps:
                 controller.start_maploader("tempMap.xml")
 

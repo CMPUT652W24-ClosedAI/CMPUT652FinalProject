@@ -2,6 +2,8 @@ import atexit
 import signal
 import subprocess
 import os
+import threading
+import time
 
 class MapLoaderController:
     def __init__(self, classpath="lib/*:src:."):
@@ -13,6 +15,8 @@ class MapLoaderController:
         """
         self.classpath = classpath
         self.process = None
+        self.error_listener_thread = None
+        self.error_callback = None
           # Register cleanup function to ensure the process is terminated
         atexit.register(self.stop_maploader)
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -67,6 +71,10 @@ class MapLoaderController:
                     cwd=maploader_dir
                 )
                 # print("MapLoader started with map file:", map_file)
+                # ! The following used to prevent blocked IO stream by continuously monitoring
+                self._start_error_listener()  # Start monitoring stderr
+                self._start_output_listeners()
+                self.monitor_process()
                 self.process.stdin.write(map_path_for_java + "\n")
                 self.process.stdin.flush()
             except Exception as e:
@@ -102,3 +110,72 @@ class MapLoaderController:
             except subprocess.TimeoutExpired:
                 return None, None
         return None, None
+
+    def check_process(self):
+        """
+        Check if the MapLoader process is still running.
+        """
+        if self.process and self.process.poll() is not None:
+            print("MapLoader process has exited.")
+            stdout, stderr = self.process.communicate()
+            print("STDOUT:", stdout)
+            print("STDERR:", stderr)
+
+    def _start_output_listeners(self):
+        """
+        Start threads to listen to stdout and stderr of the subprocess.
+        """
+        def listen_to_stream(stream, label):
+            for line in stream:
+                line = line.strip()
+                if line:
+                    # print(f"[MapLoader {label}]: {line}")
+                    if label == "ERROR" and self.error_callback:
+                        self.error_callback(line)
+
+        # Start separate threads for stdout and stderr
+        threading.Thread(target=listen_to_stream, args=(self.process.stdout, "OUTPUT"), daemon=True).start()
+        threading.Thread(target=listen_to_stream, args=(self.process.stderr, "ERROR"), daemon=True).start()
+        
+    def monitor_process(self):
+        """
+        Periodically check if the subprocess is still running.
+        """
+        def check_process():
+            while self.process and self.process.poll() is None:
+                time.sleep(5)  # Check every 5 seconds
+            if self.process and self.process.poll() is not None:
+                print("MapLoader process has terminated unexpectedly.")
+                stdout, stderr = self.process.communicate()
+                print("STDOUT:", stdout)
+                print("STDERR:", stderr)
+
+        threading.Thread(target=check_process, daemon=True).start()
+
+            
+    def _start_error_listener(self):
+        """
+        Start a thread to listen to stderr and notify on errors.
+        """
+        def listen_to_stderr():
+            for line in self.process.stderr:
+                line = line.strip()
+                if line:  # Only notify if there is meaningful output
+                    print(f"[MapLoader ERROR]: {line}")
+                    if self.error_callback:
+                        self.error_callback(line)
+
+        # Start a thread to monitor stderr
+        self.error_listener_thread = threading.Thread(target=listen_to_stderr, daemon=True)
+        self.error_listener_thread.start()
+
+    def set_error_callback(self, callback):
+        """
+        Set a callback function to be called when an error occurs.
+
+        Args:
+            callback (function): A function that accepts a single string argument (the error message).
+        """
+        self.error_callback = callback
+            
+            
