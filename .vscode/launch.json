@@ -33,5 +33,54 @@
         "--play-video",
       ]
     },
+    {
+      "name": "Train generator",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "training_script.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--num-episodes", "10",
+        "--episode-length", "32",
+        "--replay-buffer-size", "100",
+        "--step-jump", "2",
+        "--asym_to_fairness_ratio", "0.8",
+        "--wall-reward", "0.1",
+        "--visualize_maps",
+      ]
+    },
+    {
+      "name": "Train generator testing",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "training_script.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--num-episodes", "1000",
+        "--episode-length", "32",
+        "--replay-buffer-size", "100",
+        "--step-jump", "1",
+        "--asym_to_fairness_ratio", "0.8",
+        "--wall-reward", "0.1",
+        // "--visualize_maps",
+      ]
+    },
+    {
+      "name": "Run Maploader",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "run_maploader.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--num-episodes", "10",
+        "--episode-length", "32",
+        "--replay-buffer-size", "100",
+        "--step-jump", "2",
+        "--visualize_maps",
+      ]
+    },
   ]
 }
