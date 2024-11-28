@@ -33,5 +33,15 @@
         "--play-video",
       ]
     },
+    {
+      "name": "Train generator",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "training_script.py",
+      "console": "integratedTerminal",
+      "args": [
+      ]
+    },
   ]
 }

@@ -34,7 +34,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def train(
     map_paths=None,
     num_episodes: int = 1_000,
-    output_model_path: str = "models/policy_net_default_values.pt",
+    output_model_path: str = f"models/output/training_net_output___{int(time.time())}.pt",
     ratio: float = 0.8,
     use_wall_reward: bool = False,
 ):
@@ -215,6 +215,7 @@ def train(
                     ] * tau + target_net_state_dict[key] * (1 - tau)
                 target_net.load_state_dict(target_net_state_dict)
     torch.save(policy_net.state_dict(), output_model_path)
+    logger.info(f"Saved network weights to {output_model_path}")
 
 
 def sym_score(x):
@@ -242,7 +243,7 @@ def sample_mean_var(reward_trace, mean, estimated_mean, counter):
 if __name__ == "__main__":
     train(
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
-        1_000,
-        "models/policy_net_non_episodic_rewards.pt",
+        10,
+        f"models/output/training_net_output___{int(time.time())}.pt",
         0.8,
     )

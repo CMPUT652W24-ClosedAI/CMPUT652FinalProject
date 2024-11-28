@@ -1,3 +1,5 @@
+# User added
+generator/models/output/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
