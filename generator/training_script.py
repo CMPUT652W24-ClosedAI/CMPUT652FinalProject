@@ -15,6 +15,9 @@ from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
 
 def train(
     map_paths=None,
@@ -25,8 +28,8 @@ def train(
 ):
     if map_paths is None:
         map_paths = ["input_maps/defaultMap.xml"]
-    policy_net = Unet()
-    target_net = Unet()
+    policy_net = Unet().to(device)
+    target_net = Unet().to(device)
     target_net.load_state_dict(policy_net.state_dict())
     replay_buffer = MemoryBuffer(10_000)
     optimizer = torch.optim.Adam(policy_net.parameters())
@@ -36,14 +39,14 @@ def train(
     epsilon = 1.0
     tau = 0.005
 
-    previous_sym_score = torch.tensor(0.0)
-    previous_fairness_score = torch.tensor(0.0)
+    previous_sym_score = torch.tensor(0.0, device=device)
+    previous_fairness_score = torch.tensor(0.0, device=device)
 
-    fairness_reward_trace, asym_reward_trace = torch.tensor(0.0), torch.tensor(0.0)
+    fairness_reward_trace, asym_reward_trace = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
     estimated_fairness_average, estimated_asym_average = torch.tensor(
         0.0
-    ), torch.tensor(0.0)
-    fairness_counter, asym_counter = torch.tensor(1), torch.tensor(1)
+    , device=device), torch.tensor(0.0, device=device)
+    fairness_counter, asym_counter = torch.tensor(1, device=device), torch.tensor(1, device=device)
 
     for episode in tqdm(range(num_episodes)):
         # Test Using convert xml
@@ -52,6 +55,8 @@ def train(
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
+        tensor_map.to(device)
+        invalid_actions_mask.to(device)
 
         epsilon = max(epsilon - 1 / num_episodes, 0.05)
         state = tensor_map
@@ -65,7 +70,7 @@ def train(
                     q_values * (1 - state) * (1 - invalid_actions_mask)[None, :, :]
                 )
                 action = torch.tensor(
-                    torch.unravel_index(torch.argmax(q_values), q_values.shape)
+                    torch.unravel_index(torch.argmax(q_values), q_values.shape), device=device
                 )
             else:
                 while True:
@@ -78,8 +83,8 @@ def train(
                 if state[plane, x, y] == 1:
                     plane = 5
                 action = torch.tensor(
-                    [torch.tensor(plane), torch.tensor(x), torch.tensor(y)]
-                )
+                    [torch.tensor(plane, device=device), torch.tensor(x, device=device), torch.tensor(y, device=device)]
+                , device=device)
             old_state = state.clone()
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
@@ -150,9 +155,9 @@ def train(
             reward = ratio * scaled_sym_score - (1 - ratio) * scaled_fairness_score
 
             if step == 63:
-                terminal = torch.tensor(1)
+                terminal = torch.tensor(1, device=device)
             else:
-                terminal = torch.tensor(0)
+                terminal = torch.tensor(0, device=device)
             replay_buffer.push(old_state, action, state, reward, terminal)
 
             if step % 4 == 0 and len(replay_buffer) > 1_000:
@@ -206,7 +211,7 @@ def sym_score(x):
 def scale_reward(reward, reward_trace, estimated_mean, counter, gamma=1):
     reward_trace = gamma * reward_trace + reward
     estimated_mean, sigma, counter = sample_mean_var(
-        reward_trace, torch.tensor(0.0), estimated_mean, counter
+        reward_trace, torch.tensor(0.0, device=device), estimated_mean, counter
     )
     return reward / math.sqrt(sigma + 1e-8), reward_trace, estimated_mean, counter
 
