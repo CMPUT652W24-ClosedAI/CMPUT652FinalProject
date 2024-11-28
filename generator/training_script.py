@@ -1,6 +1,8 @@
 import math
 import random
 import shutil
+import logging
+import time
 
 import numpy as np
 import torch
@@ -15,9 +17,19 @@ from generator.memory_buffer import MemoryBuffer, Transition
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
+# Configure the logger
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the minimum level to capture
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
+# Logging levels
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)  # Set the desired logging level
+
+
+
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
 
 def train(
     map_paths=None,
@@ -26,6 +38,8 @@ def train(
     ratio: float = 0.8,
     use_wall_reward: bool = False,
 ):
+    start_time = time.time()
+    logger.info("Start of training")
     if map_paths is None:
         map_paths = ["input_maps/defaultMap.xml"]
     policy_net = Unet().to(device)
@@ -47,22 +61,23 @@ def train(
         0.0
     , device=device), torch.tensor(0.0, device=device)
     fairness_counter, asym_counter = torch.tensor(1, device=device), torch.tensor(1, device=device)
+    logger.info(f"Init complete after {time.time() - start_time} seconds")
 
-    for episode in tqdm(range(num_episodes)):
+    for episode in tqdm(range(num_episodes), desc="Episodes"):
+        start_time = time.time()
         # Test Using convert xml
         map_path = random.choice(map_paths)
         shutil.copy(map_path, "tempMap.xml")
         file_path = "tempMap.xml"
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
-        tensor_map.to(device)
-        invalid_actions_mask.to(device)
 
         epsilon = max(epsilon - 1 / num_episodes, 0.05)
         state = tensor_map
 
         id = 100
-        for step in range(64):
+        # logger.debug(f"Episode init finished after {time.time() - start_time} seconds")
+        for step in tqdm(range(64), desc=f"Steps in Episode {episode+1}", leave=False):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
                 # mask q_values

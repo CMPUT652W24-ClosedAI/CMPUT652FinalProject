@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from generator.enums import LayerName
 
 ALLOWED_RESOURCE_VALUES = {5, 10, 15, 20}
-
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
     root = xml_map.getroot()
@@ -21,7 +21,7 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
     terrain_values = [
         int(value) for value in terrain_data
     ]  # Convert each character to an integer
-    terrain_tensor = torch.tensor(terrain_values, dtype=torch.float32).reshape(
+    terrain_tensor = torch.tensor(terrain_values, dtype=torch.float32, device=device).reshape(
         map_width, map_height
     )
     empty_space_tensor = (terrain_tensor == 0).type(torch.float32)
@@ -40,10 +40,10 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
             other_units.append(unit)
 
     # Create Resource Tensors
-    five_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32)
-    ten_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32)
-    fifteen_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32)
-    twenty_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32)
+    five_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32, device=device)
+    ten_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32, device=device)
+    fifteen_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32, device=device)
+    twenty_resource_tensor = torch.zeros_like(wall_tensor, dtype=torch.float32, device=device)
     map_tensor = torch.stack(
         [
             empty_space_tensor,
@@ -67,7 +67,7 @@ def convert_xml(xml_map: ElementTree) -> (Tensor, Tensor):
     Extract Invalid Actions
     This is changing the tiles that workers and bases are initially on.
     """
-    invalid_actions_map = torch.zeros_like(wall_tensor, dtype=torch.float32)
+    invalid_actions_map = torch.zeros_like(wall_tensor, dtype=torch.float32, device=device)
     for other in other_units:
         x_cord = int(other.attrib["x"])
         y_cord = int(other.attrib["x"])
