@@ -47,5 +47,19 @@
         "--step-jump", "2",
       ]
     },
+    {
+      "name": "Run Maploader",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "run_maploader.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--num-episodes", "10",
+        "--episode-length", "32",
+        "--replay-buffer-size", "100",
+        "--step-jump", "2",
+      ]
+    },
   ]
 }

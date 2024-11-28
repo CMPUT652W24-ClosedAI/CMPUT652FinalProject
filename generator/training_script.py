@@ -15,7 +15,9 @@ import tyro
 
 from generator.enums import LayerName
 from generator.map_utils import update_xml_map, convert_xml
+from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
+from generator.run_maploader import run_maploader
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
@@ -68,6 +70,7 @@ class Args:
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+controller = MapLoaderController()
 
 def train(
     args: Args,
@@ -162,6 +165,10 @@ def train(
                 action[2].item(),
                 id,
             )
+            # run_maploader("tempMap.xml")
+            # Start MapLoader with the first map
+            controller.start_maploader("tempMap.xml")
+
             id += 1
 
             if use_wall_reward and action[0] == 1:
