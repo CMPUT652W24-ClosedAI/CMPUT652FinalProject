@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import math
 import random
 import shutil
@@ -10,6 +11,7 @@ import torch.nn as nn
 import xml.etree.ElementTree as ET
 
 from tqdm import tqdm
+import tyro
 
 from generator.enums import LayerName
 from generator.map_utils import update_xml_map, convert_xml
@@ -26,18 +28,55 @@ logging.basicConfig(
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # Set the desired logging level
 
+@dataclass
+class Args:
+    num_episodes: int = 1000
+    """Number of training episodes to run (times generator resets map to 0 and does episode_length steps)"""
+    episode_length: int = 64
+    """Number of changes to make to a map in a single episode (episode length)"""
+    replay_buffer_size: int = 1000
+    """Size of the replay buffer - number of steps that must be taken before changes are made"""
+    step_jump: int = 4
+    """Modulo value for steps to jump over when training - like in ppo atari (valid range: 1 to 1000)"""
+
+    # exp_name: str = os.path.basename(__file__)[: -len(".py")]
+    # """the name of this experiment"""
+    # torch_deterministic: bool = True
+    # """if toggled, `torch.backends.cudnn.deterministic=False`"""
+    # cuda: bool = True
+    # """if toggled, cuda will be enabled by default"""
+    # track: bool = False
+    # """if toggled, this experiment will be tracked with Weights and Biases"""
+    # wandb_project_name: str = "cleanRL"
+    # """the wandb's project name"""
+    # wandb_entity: str = None
+    # """the entity (team) of wandb's project"""
+    # capture_video: bool = False
+    # """whether to capture videos of the agent performances (check out `videos` folder)"""
+    # save_model: bool = False
+    # """whether to save model into the `runs/{run_name}` folder"""
+    # upload_model: bool = False
+    # """whether to upload the saved model to huggingface"""
+    # hf_entity: str = ""
+    # """the user or org name of the model repository from the Hugging Face Hub"""
+
+    def __post_init__(self):
+        # Ensure that modulo_value is within the range [1, 1000]
+        if not (1 <= self.step_jump <= 1000):
+            raise ValueError("modulo_value must be between 1 and 1000, inclusive.")
 
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train(
+    args: Args,
     map_paths=None,
-    num_episodes: int = 1_000,
     output_model_path: str = f"models/output/training_net_output___{int(time.time())}.pt",
     ratio: float = 0.8,
     use_wall_reward: bool = False,
 ):
+    num_episodes = args.num_episodes
     start_time = time.time()
     logger.info("Start of training")
     if map_paths is None:
@@ -77,7 +116,7 @@ def train(
 
         id = 100
         # logger.debug(f"Episode init finished after {time.time() - start_time} seconds")
-        for step in tqdm(range(64), desc=f"Steps in Episode {episode+1}", leave=False):
+        for step in tqdm(range(args.episode_length), desc=f"Steps in Episode {episode+1}", leave=False):
             if np.random.random() > epsilon:
                 q_values = policy_net(state)
                 # mask q_values
@@ -175,7 +214,7 @@ def train(
                 terminal = torch.tensor(0, device=device)
             replay_buffer.push(old_state, action, state, reward, terminal)
 
-            if step % 4 == 0 and len(replay_buffer) > 1_000:
+            if step % args.step_jump == 0  == 0 and len(replay_buffer) > args.replay_buffer_size:
                 transitions = replay_buffer.sample(16)
                 batch = Transition(*zip(*transitions))
 
@@ -241,9 +280,10 @@ def sample_mean_var(reward_trace, mean, estimated_mean, counter):
 
 
 if __name__ == "__main__":
+    args = tyro.cli(Args)
     train(
+        args,
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
-        10,
         f"models/output/training_net_output___{int(time.time())}.pt",
         0.8,
     )

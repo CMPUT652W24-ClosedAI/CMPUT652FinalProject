@@ -869,6 +869,17 @@ files = [
 six = ">=1.4.0"
 
 [[package]]
+name = "docstring-parser"
+version = "0.16"
+description = "Parse Python docstrings in reST, Google and Numpydoc format"
+optional = false
+python-versions = ">=3.6,<4.0"
+files = [
+    {file = "docstring_parser-0.16-py3-none-any.whl", hash = "sha256:bf0a1387354d3691d102edef7ec124f219ef639982d096e26e3b60aeffa90637"},
+    {file = "docstring_parser-0.16.tar.gz", hash = "sha256:538beabd0af1e2db0146b6bd3caa526c35a34d61af9fd2887f3a8a27a739aa6e"},
+]
+
+[[package]]
 name = "docstring-to-markdown"
 version = "0.15"
 description = "On the fly conversion of Python docstrings to markdown"
@@ -903,6 +914,20 @@ files = [
 
 [package.dependencies]
 packaging = ">=20.9"
+
+[[package]]
+name = "eval-type-backport"
+version = "0.2.0"
+description = "Like `typing._eval_type`, but lets older Python versions use newer typing features."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "eval_type_backport-0.2.0-py3-none-any.whl", hash = "sha256:ac2f73d30d40c5a30a80b8739a789d6bb5e49fdffa66d7912667e2015d9c9933"},
+    {file = "eval_type_backport-0.2.0.tar.gz", hash = "sha256:68796cfbc7371ebf923f03bdf7bef415f3ec098aeced24e054b253a0e78f7b37"},
+]
+
+[package.extras]
+tests = ["pytest"]
 
 [[package]]
 name = "exceptiongroup"
@@ -1599,6 +1624,14 @@ files = [
     {file = "jellyfish-1.1.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:2fcaefebe9d67f282d89d3a66646b77184a42b3eca2771636789b2dc1288c003"},
     {file = "jellyfish-1.1.0-cp312-none-win32.whl", hash = "sha256:e512c99941a257541ffd9f75c7a5c4689de0206841b72f1eb015599d17fed2c3"},
     {file = "jellyfish-1.1.0-cp312-none-win_amd64.whl", hash = "sha256:2b928bad2887c662783a4d9b5828ed1fa0e943f680589f7fc002c456fc02e184"},
+    {file = "jellyfish-1.1.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:5d510b04e2a39f27aef391ca18bf527ec5d9a2438a63731b87faada83996cb92"},
+    {file = "jellyfish-1.1.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:57d005cc5daa4d0a8d88341d86b1dce24e3f1d7721da75326c0b7af598a4f58c"},
+    {file = "jellyfish-1.1.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:889edab0fb2a29d29c148c9327752df525c9bdaef03eef01d1bd9c1f90b47ebf"},
+    {file = "jellyfish-1.1.0-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:937b657aacba8fe8482ebc5fea5ba1aee987ecb9da0f037bfb8a1a9045d05746"},
+    {file = "jellyfish-1.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3cb5088436ce1fdabcb46aed3a3cc215f0432313596f4e5abe5300ed833b697c"},
+    {file = "jellyfish-1.1.0-cp313-cp313-musllinux_1_1_aarch64.whl", hash = "sha256:af74156301a0ff05a22e8cf46250678e23fa447279ba6dffbf9feff01128f51d"},
+    {file = "jellyfish-1.1.0-cp313-cp313-musllinux_1_1_i686.whl", hash = "sha256:3f978bc430bbed4df3c10b2a66be7b5bddd09e6c2856c7a17fa2298fb193d4d4"},
+    {file = "jellyfish-1.1.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:b460f0bbde533f6f8624c1d7439e7f511b227ca18a58781e7f38f21961bd3f09"},
     {file = "jellyfish-1.1.0-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:7cd4b706cb6c4739846d78a398c67996cb451b09a732a625793cfe8d4f37af1b"},
     {file = "jellyfish-1.1.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:61cded25b47fe6b4c2ea9478c0a5a7531845218525a1b2627c67907ee9fe9b15"},
     {file = "jellyfish-1.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:04bf33577059afba33227977e4a2c08ccb954eb77c849fde564af3e31ee509d9"},
@@ -1963,7 +1996,7 @@ testing = ["coverage", "pyyaml"]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "markdown-it-py-3.0.0.tar.gz", hash = "sha256:e3f60a94fa066dc52ec76661e37c851cb232d92f9886b15cb560aaada2df8feb"},
@@ -2146,7 +2179,7 @@ files = [
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
@@ -3076,7 +3109,7 @@ files = [
 name = "pygments"
 version = "2.18.0"
 description = "Pygments is a syntax highlighting package written in Python."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "pygments-2.18.0-py3-none-any.whl", hash = "sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a"},
@@ -3878,7 +3911,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "rich"
 version = "13.9.4"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-optional = true
+optional = false
 python-versions = ">=3.8.0"
 files = [
     {file = "rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90"},
@@ -4218,6 +4251,20 @@ doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-
 enabler = ["pytest-enabler (>=2.2)"]
 test = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "ini2toml[lite] (>=0.14)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "jaraco.test (>=5.5)", "packaging (>=23.2)", "pip (>=19.1)", "pyproject-hooks (!=1.1)", "pytest (>=6,!=8.1.*)", "pytest-home (>=0.5)", "pytest-perf", "pytest-subprocess", "pytest-timeout", "pytest-xdist (>=3)", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel (>=0.44.0)"]
 type = ["importlib-metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.12.*)", "pytest-mypy"]
+
+[[package]]
+name = "shtab"
+version = "1.7.1"
+description = "Automagic shell tab completion for Python CLI applications"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "shtab-1.7.1-py3-none-any.whl", hash = "sha256:32d3d2ff9022d4c77a62492b6ec875527883891e33c6b479ba4d41a51e259983"},
+    {file = "shtab-1.7.1.tar.gz", hash = "sha256:4e4bcb02eeb82ec45920a5d0add92eac9c9b63b2804c9196c1f1fdc2d039243c"},
+]
+
+[package.extras]
+dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout"]
 
 [[package]]
 name = "six"
@@ -4840,6 +4887,25 @@ files = [
 six = "*"
 
 [[package]]
+name = "typeguard"
+version = "4.4.1"
+description = "Run-time type checker for Python"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "typeguard-4.4.1-py3-none-any.whl", hash = "sha256:9324ec07a27ec67fc54a9c063020ca4c0ae6abad5e9f0f9804ca59aee68c6e21"},
+    {file = "typeguard-4.4.1.tar.gz", hash = "sha256:0d22a89d00b453b47c49875f42b6601b961757541a2e1e0ef517b6e24213c21b"},
+]
+
+[package.dependencies]
+importlib-metadata = {version = ">=3.6", markers = "python_version < \"3.10\""}
+typing-extensions = ">=4.10.0"
+
+[package.extras]
+doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme (>=1.3.0)"]
+test = ["coverage[toml] (>=7)", "mypy (>=1.2.0)", "pytest (>=7)"]
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20241003"
 description = "Typing stubs for python-dateutil"
@@ -4860,6 +4926,29 @@ files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
+
+[[package]]
+name = "tyro"
+version = "0.9.2"
+description = "CLI interfaces & config objects, from types"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tyro-0.9.2-py3-none-any.whl", hash = "sha256:f7c301b30b1ac7b18672f234e45013786c494d64c0e3621b25b8414637af8f90"},
+    {file = "tyro-0.9.2.tar.gz", hash = "sha256:692687e07c1ed35cc3a841e8c4a188424023f16bdef37f2d9c23cbeb8a3b51aa"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.4.0", markers = "platform_system == \"Windows\""}
+docstring-parser = ">=0.16"
+eval-type-backport = {version = ">=0.1.3", markers = "python_version < \"3.10\""}
+rich = ">=11.1.0"
+shtab = ">=1.5.6"
+typeguard = ">=4.0.0"
+typing-extensions = {version = ">=4.9.0", markers = "python_version >= \"3.8\""}
+
+[package.extras]
+dev = ["attrs (>=21.4.0)", "coverage[toml] (>=6.5.0)", "eval-type-backport (>=0.1.3)", "flax (>=0.6.9)", "frozendict (>=2.3.4)", "mypy (>=1.4.1)", "numpy (>=1.20.0)", "omegaconf (>=2.2.2)", "pydantic (>=2.5.2,!=2.10.0)", "pyright (>=1.1.349,!=1.1.379)", "pytest (>=7.1.2)", "pytest-cov (>=3.0.0)", "pyyaml (>=6.0)", "ruff (>=0.1.13)", "torch (>=1.10.0)"]
 
 [[package]]
 name = "tzdata"
@@ -5188,4 +5277,4 @@ spyder = ["spyder"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9.7,<3.10"
-content-hash = "7aa8cf0eb3f7d32841743f97a01569587bc8e82ca8310eee675a669ba3784d2d"
+content-hash = "8f85fa07acd1d743a6f155a759435c9501408c542ba405bcadd23fa376f46bcd"

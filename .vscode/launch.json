@@ -41,6 +41,10 @@
       "program": "training_script.py",
       "console": "integratedTerminal",
       "args": [
+        "--num-episodes", "10",
+        "--episode-length", "32",
+        "--replay-buffer-size", "100",
+        "--step-jump", "2",
       ]
     },
   ]
