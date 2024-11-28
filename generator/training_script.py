@@ -30,18 +30,39 @@ logging.basicConfig(
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)  # Set the desired logging level
 
+
+
+
+
 @dataclass
 class Args:
     num_episodes: int = 1000
-    """Number of training episodes to run (times generator resets map to 0 and does episode_length steps)"""
+    """Number of training episodes to run (times generator resets map to 0 and
+    does episode_length steps)"""
     episode_length: int = 64
-    """Number of changes to make to a map in a single episode (episode length)"""
+    """Number of changes to make to a map in a single episode (episode
+    length)"""
     replay_buffer_size: int = 1000
-    """Size of the replay buffer - number of steps that must be taken before changes are made"""
+    """Size of the replay buffer - number of steps that must be taken before
+    changes are made"""
     step_jump: int = 4
-    """Modulo value for steps to jump over when training - like in ppo atari (valid range: 1 to 1000)"""
+    """Modulo value for steps to jump over when training - like in ppo atari
+    (valid range: 1 to 1000)"""
     visualize_maps: bool = False
     """Run Java map visualizer"""
+    epsilon: float = 1.0
+    """Epsilon value used for epsilon-greedy decision-making"""
+    tau: float = 0.005
+    """Tau used for epsilon-greedy decision-making"""
+    asym_to_fairness_ratio: float = 0.8
+    """Higher ratio means asymmetrical reward is weighted more compared to
+    fairness score - .8 is 80% asym score reward."""
+    wall_reward: float = 0.1
+    """If nonzero, adds artificial reward for placing walls"""
+
+
+
+
 
     # exp_name: str = os.path.basename(__file__)[: -len(".py")]
     # """the name of this experiment"""
@@ -81,10 +102,7 @@ def train(
     args: Args,
     map_paths=None,
     output_model_path: str = f"models/output/training_net_output___{int(time.time())}.pt",
-    ratio: float = 0.8,
-    use_wall_reward: bool = False,
 ):
-    num_episodes = args.num_episodes
     start_time = time.time()
     logger.info("Start of training")
     if map_paths is None:
@@ -97,8 +115,8 @@ def train(
     loss_function = nn.MSELoss()
 
     # Hyperparameters
-    epsilon = 1.0
-    tau = 0.005
+    epsilon = args.epsilon
+    tau = args.tau
 
     previous_sym_score = torch.tensor(0.0, device=device)
     previous_fairness_score = torch.tensor(0.0, device=device)
@@ -109,9 +127,12 @@ def train(
     , device=device), torch.tensor(0.0, device=device)
     fairness_counter, asym_counter = torch.tensor(1, device=device), torch.tensor(1, device=device)
     logger.info(f"Init complete after {time.time() - start_time} seconds")
+    cumulative_rewards_list = torch.tensor([], device=device)
 
-    for episode in tqdm(range(num_episodes), desc="Episodes"):
+    for episode in tqdm(range(args.num_episodes), desc="Episodes"):
+        cumulative_reward = torch.tensor(0.0, device=device)
         start_time = time.time()
+
         # Test Using convert xml
         map_path = random.choice(map_paths)
         shutil.copy(map_path, "tempMap.xml")
@@ -119,7 +140,7 @@ def train(
         xml_map = ET.parse(file_path)
         tensor_map, invalid_actions_mask = convert_xml(xml_map)
 
-        epsilon = max(epsilon - 1 / num_episodes, 0.05)
+        epsilon = max(epsilon - 1 / args.num_episodes, 0.05)
         state = tensor_map
 
         id = 100
@@ -223,6 +244,7 @@ def train(
             reward = args.asym_to_fairness_ratio * scaled_sym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
             if action[0] == 1:
                 reward += args.wall_reward
+            cumulative_reward += reward
 
             if step == args.episode_length - 1:
                 terminal = torch.tensor(1, device=device)
@@ -269,6 +291,20 @@ def train(
                         key
                     ] * tau + target_net_state_dict[key] * (1 - tau)
                 target_net.load_state_dict(target_net_state_dict)
+        # logger.info(f"Episodic cumulative reward: {cumulative_reward}")
+        cumulative_rewards_list = torch.cat(
+            (cumulative_rewards_list, cumulative_reward.unsqueeze(0))
+        )
+    # Dedicated logger for cumulative rewards
+    rewards_logger = logging.getLogger("rewards_logger")
+    rewards_log_path = output_model_path.replace(".pt", "_rewards_log.txt")
+    file_handler = logging.FileHandler(rewards_log_path, mode="w")
+    file_handler.setFormatter(logging.Formatter('%(message)s'))  # Simple format, no timestamp
+    rewards_logger.addHandler(file_handler)
+    rewards_logger.setLevel(logging.INFO)
+    for episode, reward in enumerate(cumulative_rewards_list, start=1):
+        rewards_logger.info(f"Episode {episode}: Cumulative Reward = {reward.item():.4f}")
+        # logger.info(f"Episode {episode}: Cumulative Reward = {reward.item():.4f}")
     torch.save(policy_net.state_dict(), output_model_path)
     logger.info(f"Saved network weights to {output_model_path}")
 
@@ -301,5 +337,4 @@ if __name__ == "__main__":
         args,
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
         f"models/output/training_net_output___{int(time.time())}.pt",
-        0.8,
     )
