@@ -40,6 +40,8 @@ class Args:
     """Size of the replay buffer - number of steps that must be taken before changes are made"""
     step_jump: int = 4
     """Modulo value for steps to jump over when training - like in ppo atari (valid range: 1 to 1000)"""
+    visualize_maps: bool = False
+    """Run Java map visualizer"""
 
     # exp_name: str = os.path.basename(__file__)[: -len(".py")]
     # """the name of this experiment"""
@@ -167,7 +169,8 @@ def train(
             )
             # run_maploader("tempMap.xml")
             # Start MapLoader with the first map
-            controller.start_maploader("tempMap.xml")
+            if args.visualize_maps:
+                controller.start_maploader("tempMap.xml")
 
             id += 1
 

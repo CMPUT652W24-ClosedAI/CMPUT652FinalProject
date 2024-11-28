@@ -43,9 +43,12 @@ class MapLoaderController:
 
         if self.process and self.process.poll() is None:
             # Update existing process
-            print("Updating MapLoader with new map file:", map_path_for_java)
-            self.process.stdin.write(map_path_for_java + "\n")
-            self.process.stdin.flush()
+            # print("Updating MapLoader with new map file:", map_file)
+            try:
+                self.process.stdin.write(map_path_for_java + "\n")
+                self.process.stdin.flush()
+            except Exception as e:
+                print(f"Error updating MapLoader: {e}")
         else:
             # Start a new process
             java_command = [
@@ -54,19 +57,16 @@ class MapLoaderController:
                 self.classpath,
                 "MapLoader"
             ]
-
             try:
-                # os.chdir(maploader_dir)
                 self.process = subprocess.Popen(
                     java_command,
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    cwd=maploader_dir  # Explicitly set the working directory
+                    cwd=maploader_dir
                 )
-                print("MapLoader started with map file:", map_path_for_java)
-                # test = self.get_output()
+                # print("MapLoader started with map file:", map_file)
                 self.process.stdin.write(map_path_for_java + "\n")
                 self.process.stdin.flush()
             except Exception as e:

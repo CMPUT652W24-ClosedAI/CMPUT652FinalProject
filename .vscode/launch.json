@@ -45,6 +45,7 @@
         "--episode-length", "32",
         "--replay-buffer-size", "100",
         "--step-jump", "2",
+        "--visualize_maps",
       ]
     },
     {
@@ -59,6 +60,7 @@
         "--episode-length", "32",
         "--replay-buffer-size", "100",
         "--step-jump", "2",
+        "--visualize_maps",
       ]
     },
   ]
