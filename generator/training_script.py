@@ -172,15 +172,14 @@ def train(
             )
             # run_maploader("tempMap.xml")
             # Start MapLoader with the first map
-            if len(replay_buffer) > args.replay_buffer_size:
-                a = 1
+            # if len(replay_buffer) > args.replay_buffer_size: # for debugging
+            #     a = 1
             if args.visualize_maps:
                 controller.start_maploader("tempMap.xml")
 
             id += 1
 
-            if use_wall_reward and action[0] == 1:
-                reward += 0.1
+
 
             sym_score_output = sym_score(state).float()
 
@@ -221,9 +220,11 @@ def train(
                 estimated_fairness_average,
                 fairness_counter,
             )
-            reward = ratio * scaled_sym_score - (1 - ratio) * scaled_fairness_score
+            reward = args.asym_to_fairness_ratio * scaled_sym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
+            if action[0] == 1:
+                reward += args.wall_reward
 
-            if step == 63:
+            if step == args.episode_length - 1:
                 terminal = torch.tensor(1, device=device)
             else:
                 terminal = torch.tensor(0, device=device)
