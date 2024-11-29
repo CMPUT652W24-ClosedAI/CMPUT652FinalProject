@@ -3,6 +3,9 @@ from generator.map_utils import update_xml_map, convert_xml
 
 import torch
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
 def simple_value_function(state, player=0):
     #empty_space_tensor = state[0]
     #wall_tensor = state[1]
@@ -21,8 +24,8 @@ def simple_value_function(state, player=0):
 
     # Create a grid of coordinates
     y_coords, x_coords = torch.meshgrid(
-        torch.arange(height, dtype=torch.float32),
-        torch.arange(width, dtype=torch.float32),
+        torch.arange(height, dtype=torch.float32, device=device),
+        torch.arange(width, dtype=torch.float32, device=device),
         indexing="ij"
     )
     
@@ -35,6 +38,12 @@ def simple_value_function(state, player=0):
     score = torch.sum(score_grid)
     
     return score
+
+# parallel to value_function_extraction.py squared_value_difference() function
+def baseline_fairness_score(
+    tensor_map: torch.Tensor
+    ):
+    return (simple_value_function(tensor_map, player=0) - simple_value_function(tensor_map, player=1)) ** 2
 
 
 

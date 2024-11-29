@@ -64,7 +64,8 @@
         "--step-jump", "1",
         "--asym_to_fairness_ratio", "0.8",
         "--wall-reward", "0.1",
-        // "--visualize_maps",
+        "--visualize_maps",
+        "--use_baseline",
       ]
     },
     {

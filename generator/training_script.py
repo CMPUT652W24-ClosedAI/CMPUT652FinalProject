@@ -18,6 +18,7 @@ from generator.map_utils import update_xml_map, convert_xml
 from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.run_maploader import run_maploader
+from generator.simple_value_function import baseline_fairness_score
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
@@ -45,6 +46,8 @@ class Args:
     replay_buffer_size: int = 1000
     """Size of the replay buffer - number of steps that must be taken before
     changes are made"""
+    replay_buffer_sample_size: int = 16
+    """Count of elements out of the replay buffer to sample at one time"""
     step_jump: int = 4
     """Modulo value for steps to jump over when training - like in ppo atari
     (valid range: 1 to 1000)"""
@@ -59,7 +62,8 @@ class Args:
     fairness score - .8 is 80% asym score reward."""
     wall_reward: float = 0.1
     """If nonzero, adds artificial reward for placing walls"""
-
+    use_baseline: bool = False
+    """Whether to use the simple manhattan distance baseline fairness score, from simple_value_function.py"""
 
 
 
@@ -110,7 +114,7 @@ def train(
     policy_net = Unet().to(device)
     target_net = Unet().to(device)
     target_net.load_state_dict(policy_net.state_dict())
-    replay_buffer = MemoryBuffer(10_000)
+    replay_buffer = MemoryBuffer(args.replay_buffer_size)
     optimizer = torch.optim.Adam(policy_net.parameters())
     loss_function = nn.MSELoss()
 
@@ -211,7 +215,8 @@ def train(
                 squared_value_difference("maps/16x16/tempMap.xml")
                 .reshape(-1)
                 .squeeze(0)
-            )
+            ) if not args.use_baseline else baseline_fairness_score(state)
+
 
             sym_score_difference = sym_score_output - previous_sym_score
             previous_sym_score = torch.clone(sym_score_output)
@@ -253,7 +258,7 @@ def train(
             replay_buffer.push(old_state, action, state, reward, terminal)
 
             if step % args.step_jump == 0  == 0 and len(replay_buffer) > args.replay_buffer_size:
-                transitions = replay_buffer.sample(16)
+                transitions = replay_buffer.sample(args.replay_buffer_sample_size)
                 batch = Transition(*zip(*transitions))
 
                 state_batch = torch.stack(batch.state)
