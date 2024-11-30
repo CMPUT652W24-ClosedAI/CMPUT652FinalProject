@@ -224,6 +224,12 @@ def train(
             fairness_score_difference = fairness_score_output - previous_fairness_score
             previous_fairness_score = torch.clone(fairness_score_output)
 
+            if step == args.episode_length - 1:
+                terminal = torch.tensor(1, device=device)
+            else:
+                terminal = torch.tensor(0, device=device)           
+
+
             (
                 scaled_sym_score,
                 asym_reward_trace,
@@ -234,6 +240,7 @@ def train(
                 asym_reward_trace,
                 estimated_asym_average,
                 asym_counter,
+                terminal
             )
             (
                 scaled_fairness_score,
@@ -245,19 +252,20 @@ def train(
                 fairness_reward_trace,
                 estimated_fairness_average,
                 fairness_counter,
+                terminal
             )
             reward = args.asym_to_fairness_ratio * scaled_sym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
             if action[0] == 1:
                 reward += args.wall_reward
+
+            if abs(reward) >= 1000:
+                print('here')
             cumulative_reward += reward
 
-            if step == args.episode_length - 1:
-                terminal = torch.tensor(1, device=device)
-            else:
-                terminal = torch.tensor(0, device=device)
+
             replay_buffer.push(old_state, action, state, reward, terminal)
 
-            if step % args.step_jump == 0  == 0 and len(replay_buffer) > args.replay_buffer_size:
+            if step % args.step_jump == 0 and len(replay_buffer) > args.replay_buffer_size:
                 transitions = replay_buffer.sample(args.replay_buffer_sample_size)
                 batch = Transition(*zip(*transitions))
 
@@ -320,8 +328,11 @@ def sym_score(x):
     return torch.sum(x != reflected_x)
 
 
-def scale_reward(reward, reward_trace, estimated_mean, counter, gamma=1):
-    reward_trace = gamma * reward_trace + reward
+def scale_reward(reward, reward_trace, estimated_mean, counter, term, gamma=1):
+    reward_trace = gamma * (1 - term) * reward_trace + reward
+    old_reward_trace = reward_trace
+    old_estimated_mean = reward_trace
+    old_counter = counter
     estimated_mean, sigma, counter = sample_mean_var(
         reward_trace, torch.tensor(0.0, device=device), estimated_mean, counter
     )
@@ -331,8 +342,12 @@ def scale_reward(reward, reward_trace, estimated_mean, counter, gamma=1):
 def sample_mean_var(reward_trace, mean, estimated_mean, counter):
     counter += 1
     update_mean = mean + (1 / counter) * (reward_trace - mean)
+    if (reward_trace - mean) * (reward_trace - update_mean) < 0:
+        print('here')
     estimated_mean += (reward_trace - mean) * (reward_trace - update_mean)
     sigma = estimated_mean / (counter - 1) if counter > 2 else 1
+    if estimated_mean < 0:
+        print('here')
     return update_mean, sigma, counter
 
 
