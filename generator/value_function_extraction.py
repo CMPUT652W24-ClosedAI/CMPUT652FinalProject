@@ -18,9 +18,9 @@ def squared_value_difference(
     model_path: str = "gym-microrts-static-files/agent_sota.pt",
 ) -> Tensor:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    # random.seed(seed)
+    # np.random.seed(seed)
+    # torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
 
     ais = []
