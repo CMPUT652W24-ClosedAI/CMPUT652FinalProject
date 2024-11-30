@@ -172,7 +172,7 @@ def train(
                 action = torch.tensor(
                     [torch.tensor(plane, device=device), torch.tensor(x, device=device), torch.tensor(y, device=device)]
                 , device=device)
-            old_state = state.clone()
+            old_state = state.clone() # [ 5, 15,  8], [channel, x, y]
             state[:, action[1], action[2]] = 0
             state[action[0], action[1], action[2]] = 1
 
