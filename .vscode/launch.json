@@ -107,8 +107,9 @@
       "args": [
         "--input-map-path", "input_maps/defaultMap.xml",
         "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
-        "--num-maps", "100",
+        "--num-maps", "1000",
         "--episode_length", "64",
+        "--top-k", "5",
       ]
     },
     {
@@ -121,7 +122,7 @@
       "args": [
         "--input-map-path", "input_maps/defaultMap.xml",
         "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
-        "--num-maps", "100",
+        "--num-maps", "1000",
         "--episode_length", "64",
         "--use-random"
       ]
