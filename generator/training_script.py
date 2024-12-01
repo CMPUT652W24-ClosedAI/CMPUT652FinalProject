@@ -17,7 +17,7 @@ from generator.enums import LayerName
 from generator.map_utils import update_xml_map, convert_xml
 from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
-from generator.run_maploader import run_maploader
+from generator.reward_scaling import ScaleReward
 from generator.simple_value_function import baseline_fairness_score
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
@@ -98,7 +98,7 @@ class Args:
 def handle_error(message):
     raise RuntimeError(f"ALERT: An error occurred in MapLoader: {message}")
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0") if getattr(torch, "cuda", None) and torch.cuda.is_available() else torch.device("cpu")
 controller = MapLoaderController()
 controller.set_error_callback(handle_error)
 
@@ -125,11 +125,9 @@ def train(
     previous_sym_score = torch.tensor(0.0, device=device)
     previous_fairness_score = torch.tensor(0.0, device=device)
 
-    fairness_reward_trace, asym_reward_trace = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
-    estimated_fairness_average, estimated_asym_average = torch.tensor(
-        0.0
-    , device=device), torch.tensor(0.0, device=device)
-    fairness_counter, asym_counter = torch.tensor(1, device=device), torch.tensor(1, device=device)
+    fairness_scaling = ScaleReward(device=device)
+    sym_scaling = ScaleReward(device=device)
+
     logger.info(f"Init complete after {time.time() - start_time} seconds")
     cumulative_rewards_list = torch.tensor([], device=device)
 
@@ -229,37 +227,12 @@ def train(
             else:
                 terminal = torch.tensor(0, device=device)           
 
-
-            (
-                scaled_sym_score,
-                asym_reward_trace,
-                estimated_asym_average,
-                asym_counter,
-            ) = scale_reward(
-                sym_score_difference,
-                asym_reward_trace,
-                estimated_asym_average,
-                asym_counter,
-                terminal
-            )
-            (
-                scaled_fairness_score,
-                fairness_reward_trace,
-                estimated_fairness_average,
-                fairness_counter,
-            ) = scale_reward(
-                fairness_score_difference,
-                fairness_reward_trace,
-                estimated_fairness_average,
-                fairness_counter,
-                terminal
-            )
+            scaled_sym_score = sym_scaling.scale_reward(sym_score_difference, terminal)
+            scaled_fairness_score = fairness_scaling.scale_reward(fairness_score_difference, terminal)
             reward = args.asym_to_fairness_ratio * scaled_sym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
             if action[0] == 1:
                 reward += args.wall_reward
 
-            if abs(reward) >= 1000:
-                print('here')
             cumulative_reward += reward
 
 
@@ -326,29 +299,6 @@ def sym_score(x):
     x = torch.argmax(x, dim=-3)
     reflected_x = torch.transpose(torch.flip(x, dims=[-1, -2]), -1, -2)
     return torch.sum(x != reflected_x)
-
-
-def scale_reward(reward, reward_trace, estimated_mean, counter, term, gamma=1):
-    reward_trace = gamma * (1 - term) * reward_trace + reward
-    old_reward_trace = reward_trace
-    old_estimated_mean = reward_trace
-    old_counter = counter
-    estimated_mean, sigma, counter = sample_mean_var(
-        reward_trace, torch.tensor(0.0, device=device), estimated_mean, counter
-    )
-    return reward / math.sqrt(sigma + 1e-8), reward_trace, estimated_mean, counter
-
-
-def sample_mean_var(reward_trace, mean, estimated_mean, counter):
-    counter += 1
-    update_mean = mean + (1 / counter) * (reward_trace - mean)
-    if (reward_trace - mean) * (reward_trace - update_mean) < 0:
-        print('here')
-    estimated_mean += (reward_trace - mean) * (reward_trace - update_mean)
-    sigma = estimated_mean / (counter - 1) if counter > 2 else 1
-    if estimated_mean < 0:
-        print('here')
-    return update_mean, sigma, counter
 
 
 if __name__ == "__main__":

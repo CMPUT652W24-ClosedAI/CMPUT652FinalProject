@@ -11,13 +11,13 @@ from experiments.ppo_gridnet import Agent
 from gym_microrts import microrts_ai  # noqa
 from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
+device = torch.device("cuda:0") if getattr(torch, "cuda", None) and torch.cuda.is_available() else torch.device("cpu")
 
 def squared_value_difference(
     map_path: str = "maps/16x16/basesWorkers16x16A.xml",
     seed: int = 0,
     model_path: str = "gym-microrts-static-files/agent_sota.pt",
 ) -> Tensor:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # random.seed(seed)
     # np.random.seed(seed)
     # torch.manual_seed(seed)
