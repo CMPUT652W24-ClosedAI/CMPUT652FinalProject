@@ -20,6 +20,7 @@ from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.run_maploader import run_maploader
 from generator.simple_value_function import baseline_fairness_score
+from generator.training_script import sym_score
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
@@ -52,6 +53,13 @@ class Args:
     episode_length: int = 64
     """Number of changes to make to a map in a single episode (episode length)"""
 
+    use_baseline: bool = False
+    """Whether to use the simple manhattan distance baseline fairness score,
+    from simple_value_function.py. Used here for the generated fairness score to
+    be saved in the output data file"""
+
+
+
     # replay_buffer_size: int = 1000
     # """Size of the replay buffer - number of steps that must be taken before
     # changes are made"""
@@ -82,6 +90,13 @@ class Args:
 
 
 def generate_maps(args: Args):
+    # Extract model parameters from model_path for folder naming
+    model_params = os.path.basename(args.model_path).replace(".pt", "")
+    timestamp = int(time.time())
+
+    # Modify the output directory to include model parameters
+    args.output_map_dir = f"{args.output_map_dir}_model_{model_params}"
+
     policy_net = Unet().to(device=device)
     policy_net.load_state_dict(torch.load(args.model_path))
     target_net = Unet().to(device=device)
@@ -91,13 +106,17 @@ def generate_maps(args: Args):
     original_xml_map = ET.parse(args.input_map_path)
     # Ensure the output directory exists
     os.makedirs(args.output_map_dir, exist_ok=True)
+    # File to store symmetry and fairness scores
+    scores_file_path = os.path.join(args.output_map_dir, "scores.txt")
+    with open(scores_file_path, "w") as scores_file:
+        scores_file.write("MapIndex,SymmetryScore,FairnessScore\n")  # Header
 
     for map_idx in range(1, args.num_maps + 1):
         # Create a new map file name for each map
         temp_map_path = f"{args.output_map_dir}/tempMap.xml"
         shutil.copy(args.input_map_path, temp_map_path)
         output_map_path = f"{args.output_map_dir}/map_{map_idx}.xml"
-        
+
         # Copy the input map to the new file path
         shutil.copy(args.input_map_path, args.output_map_dir)
         
@@ -138,7 +157,29 @@ def generate_maps(args: Args):
                     id,
                 )
                 id += 1
+                
+                # Compute scores
+        with torch.no_grad():
+            shutil.copy(
+                "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
+            )
+            sym_score_output = sym_score(state).float().item()  # Symmetry score
+            fairness_score_output = (
+                # squared_value_difference(temp_map_path)
+                squared_value_difference("maps/16x16/tempMap.xml")
+                .reshape(-1)
+                .squeeze(0)
+                .item()
+                if not args.use_baseline
+                else baseline_fairness_score(state).item()
+            )
+
+        # Save the scores to the file
+        with open(scores_file_path, "a") as scores_file:
+            scores_file.write(f"{map_idx},{sym_score_output},{fairness_score_output}\n")
+
         shutil.copy(temp_map_path, output_map_path)
+        print(f"maps stored in {args.output_map_dir}")
 
 
 

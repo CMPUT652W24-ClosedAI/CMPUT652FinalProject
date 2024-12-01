@@ -18,6 +18,7 @@ from generator.map_utils import update_xml_map, convert_xml
 from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.reward_scaling import ScaleReward
+from generator.run_maploader import run_maploader
 from generator.simple_value_function import baseline_fairness_score
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
@@ -105,8 +106,16 @@ controller.set_error_callback(handle_error)
 def train(
     args: Args,
     map_paths=None,
-    output_model_path: str = f"models/output/training_net_output___{int(time.time())}.pt",
+    output_model_path: str = None,
 ):
+    # Dynamically generate output_model_path with important argument values
+    if output_model_path is None:
+        timestamp = int(time.time())
+        output_model_path = (
+            f"models/output/training_net_"
+            f"eps_{args.epsilon}_tau_{args.tau}_ratio_{args.asym_to_fairness_ratio}_"
+            f"wr_{args.wall_reward}_ep_{args.num_episodes}_len_{args.episode_length}_baseline_{args.use_baseline}___{timestamp}.pt"
+        )
     start_time = time.time()
     logger.info("Start of training")
     if map_paths is None:
@@ -306,5 +315,4 @@ if __name__ == "__main__":
     train(
         args,
         ["input_maps/defaultMap.xml", "input_maps/blank.xml", "input_maps/map-01.xml"],
-        f"models/output/training_net_output___{int(time.time())}.pt",
     )

@@ -50,3 +50,18 @@ If the `poetry install` command gets stuck on a Linux machine, [it may help to f
 # To run the linter, use the following command:
 poetry run black .
 ```
+
+
+## Running with args
+python3 generator/training_script.py --num-episodes 1000 --episode-length 64 --replay-buffer-size 1000 --step-jump 4 --asym_to_fairness_ratio 0.8 --wall-reward 0.1
+
+python3 generator/map_generator.py --input-map-path input_maps/defaultMap.xml --model-path "models/output/training_net_output___1732838472 episodes 1000 --episode-length 32 --replay-buffer-size 100 --step-jump 1 --asym_to_fairness_ratio 0.8 --wall-reward 0.1 --visualize_maps --use_baseline.pt" --num-maps 100 --episode_length 64
+
+
+cd maploader
+java -cp "lib/*:src:." MapLoader
+
+../generator/outputMaps/__1733021997 training_net_output___1733013680 numep100 eplength 64 replay-buffer-size 1000 step-jump 4 ratio 0.8 wallreward 0.1/map_96.xml
+
+
+../generator/outputMaps/__1733023420_model_training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366/map_100.xml
