@@ -131,7 +131,7 @@ def train(
     epsilon = args.epsilon
     tau = args.tau
 
-    previous_sym_score = torch.tensor(0.0, device=device)
+    previous_asym_score = torch.tensor(0.0, device=device)
     previous_fairness_score = torch.tensor(0.0, device=device)
 
     fairness_scaling = ScaleReward(device=device)
@@ -213,7 +213,7 @@ def train(
 
 
 
-            sym_score_output = sym_score(state).float()
+            asym_score_output = asym_score(state).float()
 
             shutil.copy(
                 "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
@@ -225,8 +225,8 @@ def train(
             ) if not args.use_baseline else baseline_fairness_score(state)
 
 
-            sym_score_difference = sym_score_output - previous_sym_score
-            previous_sym_score = torch.clone(sym_score_output)
+            asym_score_difference = asym_score_output - previous_asym_score
+            previous_asym_score = torch.clone(asym_score_output)
 
             fairness_score_difference = fairness_score_output - previous_fairness_score
             previous_fairness_score = torch.clone(fairness_score_output)
@@ -236,9 +236,9 @@ def train(
             else:
                 terminal = torch.tensor(0, device=device)           
 
-            scaled_sym_score = sym_scaling.scale_reward(sym_score_difference, terminal)
+            scaled_asym_score = sym_scaling.scale_reward(asym_score_difference, terminal)
             scaled_fairness_score = fairness_scaling.scale_reward(fairness_score_difference, terminal)
-            reward = args.asym_to_fairness_ratio * scaled_sym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
+            reward = args.asym_to_fairness_ratio * scaled_asym_score - (1 - args.asym_to_fairness_ratio) * scaled_fairness_score
             if action[0] == 1:
                 reward += args.wall_reward
 
@@ -304,7 +304,7 @@ def train(
     logger.info(f"Saved network weights to {output_model_path}")
 
 
-def sym_score(x):
+def asym_score(x):
     x = torch.argmax(x, dim=-3)
     reflected_x = torch.transpose(torch.flip(x, dims=[-1, -2]), -1, -2)
     return torch.sum(x != reflected_x)

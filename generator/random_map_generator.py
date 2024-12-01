@@ -1,3 +1,5 @@
+# Andrew obseleted these changes by adding similar functionality to map
+# generator with the flag --use-random
 import shutil
 
 import numpy as np
@@ -56,7 +58,7 @@ def generate_random_map(input_map_path: str, output_map_path: str, evaluation = 
             id += 1
 
     if evaluation:
-        sym_score_output = sym_score(state).float()
+        asym_score_output = asym_score(state).float()
 
         shutil.copy(
             "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
@@ -66,10 +68,10 @@ def generate_random_map(input_map_path: str, output_map_path: str, evaluation = 
             .reshape(-1)
             .squeeze(0)
         ) if not useBaseline else baseline_fairness_score(state)
-        return (sym_score_output, fairness_score_output)
+        return (asym_score_output, fairness_score_output)
 
 
-def sym_score(x):
+def asym_score(x):
     x = torch.argmax(x, dim=-3)
     reflected_x = torch.transpose(torch.flip(x, dims=[-1, -2]), -1, -2)
     return torch.sum(x != reflected_x)
@@ -81,4 +83,4 @@ if __name__ == "__main__":
         "generated_maps/random.xml",
         evaluation = True,
     )
-    print(f"Symmetry Score: {x}, Fairness Score: {y}")
+    print(f"Aymmetry Score: {x}, Fairness Score: {y}")

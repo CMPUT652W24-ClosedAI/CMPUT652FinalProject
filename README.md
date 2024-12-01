@@ -53,9 +53,10 @@ poetry run black .
 
 
 ## Running with args
-python3 generator/training_script.py --num-episodes 1000 --episode-length 64 --replay-buffer-size 1000 --step-jump 4 --asym_to_fairness_ratio 0.8 --wall-reward 0.1
+cd generator
+python3 training_script.py --num-episodes 1000 --episode-length 64 --replay-buffer-size 1000 --step-jump 4 --asym_to_fairness_ratio 0.8 --wall-reward 0.1
 
-python3 generator/map_generator.py --input-map-path input_maps/defaultMap.xml --model-path "models/output/training_net_output___1732838472 episodes 1000 --episode-length 32 --replay-buffer-size 100 --step-jump 1 --asym_to_fairness_ratio 0.8 --wall-reward 0.1 --visualize_maps --use_baseline.pt" --num-maps 100 --episode_length 64
+python3 map_generator.py --input-map-path input_maps/defaultMap.xml --model-path "models/output/training_net_output___1732838472 episodes 1000 --episode-length 32 --replay-buffer-size 100 --step-jump 1 --asym_to_fairness_ratio 0.8 --wall-reward 0.1 --visualize_maps --use_baseline.pt" --num-maps 100 --episode_length 64
 
 
 cd maploader

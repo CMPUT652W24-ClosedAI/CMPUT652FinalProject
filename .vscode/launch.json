@@ -64,7 +64,7 @@
         "--step-jump", "4",
         "--asym_to_fairness_ratio", "0.8",
         "--wall-reward", "0.1",
-        "--use-baseline",
+        // "--use-baseline",
         // "--visualize_maps",
       ]
     },
@@ -111,6 +111,27 @@
         "--episode_length", "64",
       ]
     },
+    {
+      "name": "Run map generator random agent",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "map_generator.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--input-map-path", "input_maps/defaultMap.xml",
+        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
+        "--num-maps", "100",
+        "--episode_length", "64",
+        "--use-random"
+      ]
+    },
+    {
+      "name": "dont use",
+      "args": [
+        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
+      ]
+    }
 
   ]
 }

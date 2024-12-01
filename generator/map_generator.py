@@ -20,7 +20,7 @@ from generator.maploader_controller import MapLoaderController
 from generator.memory_buffer import MemoryBuffer, Transition
 from generator.run_maploader import run_maploader
 from generator.simple_value_function import baseline_fairness_score
-from generator.training_script import sym_score
+from generator.training_script import asym_score
 from generator.unet_generator import Unet
 from generator.value_function_extraction import squared_value_difference
 
@@ -57,6 +57,11 @@ class Args:
     """Whether to use the simple manhattan distance baseline fairness score,
     from simple_value_function.py. Used here for the generated fairness score to
     be saved in the output data file"""
+    use_random: bool = False
+    """Whether to use the random map changer rather than the model output"""
+
+    top_k: int = 1
+    """Top k values to use from the model"""
 
 
 
@@ -106,10 +111,10 @@ def generate_maps(args: Args):
     original_xml_map = ET.parse(args.input_map_path)
     # Ensure the output directory exists
     os.makedirs(args.output_map_dir, exist_ok=True)
-    # File to store symmetry and fairness scores
+    # File to store asymmetry and fairness scores
     scores_file_path = os.path.join(args.output_map_dir, "scores.txt")
     with open(scores_file_path, "w") as scores_file:
-        scores_file.write("MapIndex,SymmetryScore,FairnessScore\n")  # Header
+        scores_file.write("MapIndex,AsymmetryScore,FairnessScore\n")  # Header
 
     for map_idx in range(1, args.num_maps + 1):
         # Create a new map file name for each map
@@ -129,12 +134,39 @@ def generate_maps(args: Args):
 
         for step in tqdm(range(args.episode_length), desc=f"Generating map {map_idx}"):
             with torch.no_grad():
-                q_values = policy_net(state)
-                # Mask q_values
-                q_values = q_values * (1 - state) * (1 - invalid_actions_mask)[None, :, :]
-                action = torch.tensor(
-                    torch.unravel_index(torch.argmax(q_values), q_values.shape), device=device
-                )
+                if args.use_random:
+                    while True:
+                        x = np.random.randint(16)
+                        y = np.random.randint(16)
+                        # Mask Invalid Actions
+                        if invalid_actions_mask[x, y] != 1.0:
+                            break
+                    plane = np.random.randint(5)
+                    if state[plane, x, y] == 1:
+                        plane = 5
+                    action = torch.tensor(
+                        [torch.tensor(plane, device=device), torch.tensor(x, device=device), torch.tensor(y, device=device)]
+                        , device=device)
+                else: 
+                    q_values = policy_net(state)
+                    # Mask q_values
+                    q_values = q_values * (1 - state) * (1 - invalid_actions_mask)[None, :, :]
+                    # Get the top N flat indices
+                    
+                    topk_values, topk_indices = torch.topk(q_values.flatten(), args.top_k)
+
+                    # Randomly select one of the top N actions
+                    selected_index = random.choice(topk_indices)
+                    # Convert the flat index back to multidimensional indices
+                    # action_indices = torch.unravel_index(selected_index.item(), q_values.shape)
+                    # action = torch.tensor(action_indices, device=device)
+
+                    action = torch.tensor(
+                        torch.unravel_index(selected_index, q_values.shape), device=device
+                    ) # 749 is torch.argmax
+
+                #     torch.unravel_index(torch.argmax(q_values), q_values.shape), device=device
+                # ) # 749 is torch.argmax
                 old_state = state.clone()
                 state[:, action[1], action[2]] = 0 # resets all state channels at this xy to 0
                 state[action[0], action[1], action[2]] = 1 # sets xy to this channel to 1
@@ -161,9 +193,9 @@ def generate_maps(args: Args):
                 # Compute scores
         with torch.no_grad():
             shutil.copy(
-                "tempMap.xml", "../gym_microrts/microrts/maps/16x16/tempMap.xml"
+                temp_map_path, "../gym_microrts/microrts/maps/16x16/tempMap.xml"
             )
-            sym_score_output = sym_score(state).float().item()  # Symmetry score
+            asym_score_output = asym_score(state).float().item()  # Asymmetry score
             fairness_score_output = (
                 # squared_value_difference(temp_map_path)
                 squared_value_difference("maps/16x16/tempMap.xml")
@@ -176,7 +208,7 @@ def generate_maps(args: Args):
 
         # Save the scores to the file
         with open(scores_file_path, "a") as scores_file:
-            scores_file.write(f"{map_idx},{sym_score_output},{fairness_score_output}\n")
+            scores_file.write(f"{map_idx},{asym_score_output},{fairness_score_output}\n")
 
         shutil.copy(temp_map_path, output_map_path)
         print(f"maps stored in {args.output_map_dir}")
