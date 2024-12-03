@@ -1,8 +1,10 @@
 # http://proceedings.mlr.press/v97/han19a/han19a.pdf
 
 import argparse
+import csv
 import os
 import random
+import signal
 import time
 from distutils.util import strtobool
 
@@ -12,7 +14,7 @@ from gym.spaces import MultiDiscrete
 from stable_baselines3.common.vec_env import VecMonitor, VecVideoRecorder
 from torch.utils.tensorboard import SummaryWriter
 
-from gym_microrts import microrts_ai  # noqa
+from gym_microrts import microrts_ai  # noqa`
 
 
 def parse_args():
@@ -20,21 +22,23 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp-name', type=str, default=os.path.basename(__file__).rstrip(".py"),
         help='the name of this experiment')
+    parser.add_argument('--mapName', type=str, default="map_1.xml",
+        help='the name of this experiment')
     parser.add_argument('--gym-id', type=str, default="MicroRTSGridModeVecEnv",
         help='the id of the gym environment')
     parser.add_argument('--learning-rate', type=float, default=2.5e-4,
         help='the learning rate of the optimizer')
-    parser.add_argument('--seed', type=int, default=2174689341,
+    parser.add_argument('--seed', type=int, default=11111,
         help='seed of the experiment')
-    parser.add_argument('--total-timesteps', type=int, default=1000000,
+    parser.add_argument('--total-timesteps', type=int, default=5120,
         help='total timesteps of the experiments')
-    parser.add_argument('--torch-deterministic', type=lambda x: bool(strtobool(x)), default=True, nargs='?', const=True,
+    parser.add_argument('--torch-deterministic', type=lambda x: bool(strtobool(x)), default=False, nargs='?', const=True,
         help='if toggled, `torch.backends.cudnn.deterministic=False`')
     parser.add_argument('--cuda', type=lambda x: bool(strtobool(x)), default=True, nargs='?', const=True,
         help='if toggled, cuda will not be enabled by default')
     parser.add_argument('--prod-mode', type=lambda x: bool(strtobool(x)), default=False, nargs='?', const=True,
         help='run the script in production mode and use wandb to log outputs')
-    parser.add_argument('--capture-video', type=lambda x: bool(strtobool(x)), default=True, nargs='?', const=True,
+    parser.add_argument('--capture-video', type=lambda x: bool(strtobool(x)), default=False, nargs='?', const=True,
         help='whether to capture videos of the agent performances (check out `videos` folder)')
     parser.add_argument('--wandb-project-name', type=str, default="cleanRL",
         help="the wandb's project name")
@@ -68,9 +72,8 @@ def parse_args():
     return args
 
 
-if __name__ == "__main__":
-    args = parse_args()
-
+def main(args):
+    data = []
     if args.model_type == "ppo_gridnet_large":
         from ppo_gridnet_large import Agent, MicroRTSStatsRecorder
 
@@ -119,7 +122,7 @@ if __name__ == "__main__":
         max_steps=5000,
         render_theme=2,
         ai2s=ais,
-        map_paths=["maps/16x16/basesWorkers16x16A.xml"],
+        map_paths=[f"maps/testingMaps/{args.mapName}.xml"],
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0]),
     )
     envs = MicroRTSStatsRecorder(envs)
@@ -200,23 +203,48 @@ if __name__ == "__main__":
                     p2_mask_reversed[..., [18, 20]] = p2_mask_reversed[..., [20, 18]]
                     p2_mask_reversed[..., [19, 21]] = p2_mask_reversed[..., [21, 19]]
 
+                    # other_seed = 3721
+
+                    # random.seed(args.seed)
+                    # np.random.seed(args.seed)
+                    # torch.manual_seed(args.seed)
+                    # torch.backends.cudnn.deterministic = args.torch_deterministic
+
                     p1_action, _, _, _, _ = agent.get_action_and_value(
                         p1_obs, envs=envs, invalid_action_masks=p1_mask, device=device
                     )
+
+                    # random.seed(args.seed)
+                    # np.random.seed(args.seed)
+                    # torch.manual_seed(args.seed)
+                    # torch.backends.cudnn.deterministic = args.torch_deterministic
 
                     p2_action, _, _, _, _ = agent2.get_action_and_value(
                         p2_obs_reversed, envs=envs, invalid_action_masks=p2_mask_reversed, device=device
                     )
 
+                    p2_relative_attack = torch.clone(p2_action[:, :, -1])
                     p2_fixed_action = p2_action.reshape(1, 16, 16, 7).flip(dims=[1, 2]).reshape(1, 256, 7)
                     p2_fixed_action[:, :, 1: 5] = (p2_fixed_action[:, :, 1: 5] + 2 )% 4
+                    #
+                    p2_relative_attack = torch.clone(p2_fixed_action[:, :, -1])
+                    # x = (p2_relative_attack % 7)
+                    # y = (p2_relative_attack // 7)
+                    # x_prime =( 6 - x)
+                    # y_prime = (6 - y)
+                    # result = (7 * y_prime) + x_prime
+                    # p2_fixed_action[:, :, -1] = result
+                    #
 
-                    p2_relative_attack = p2_fixed_action[:, :, -1]
-                    x = p2_relative_attack % 7
-                    y = p2_relative_attack // 7
-                    x_prime = 6 - x
-                    y_prime = 6 - y
-                    p2_fixed_action[:, :, -1] = x_prime + 7 * y_prime
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 31, torch.tensor(-1), p2_relative_attack)
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 17, torch.tensor(31),p2_relative_attack)
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(17),p2_relative_attack)
+
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 25, torch.tensor(-1), p2_relative_attack)
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 23, torch.tensor(25), p2_relative_attack)
+                    p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(23), p2_relative_attack)
+
+
 
 
                     action = torch.zeros(
@@ -249,6 +277,19 @@ if __name__ == "__main__":
                                 f"player{idx % 2}",
                                 info["microrts_stats"]["WinLossRewardFunction"],
                             )
+                            data.append(info["microrts_stats"]["WinLossRewardFunction"])
+    filename = f"self_play_results/{args.mapName}/{args.seed}/results.csv"
+    if len(data) == 0:
+        data.append(-2)
 
-    envs.close()
-    writer.close()
+    os.makedirs(f"self_play_results/{args.mapName}/{args.seed}", exist_ok=True)
+
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(data)
+
+    os.kill(os.getpid(), signal.SIGKILL)
+
+if __name__ == "__main__":
+    args = parse_args()
+    main(args)
