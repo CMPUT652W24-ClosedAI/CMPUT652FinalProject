@@ -2,6 +2,8 @@
 
 import argparse
 import csv
+import itertools
+from multiprocessing import Pool, cpu_count
 import os
 import random
 import time
@@ -66,7 +68,7 @@ def parse_args():
     return args
 
 
-def main(args):
+def self_play(args, map_name: str, seed: int):
     if args.model_type == "ppo_gridnet_large":
         from ppo_gridnet_large import Agent, MicroRTSStatsRecorder
 
@@ -96,7 +98,7 @@ def main(args):
         max_steps=10_000,
         render_theme=2,
         ai2s=ais,
-        map_paths=[f"{args.map_path}/{args.map_name}.xml"],
+        map_paths=[f"{args.map_path}/{map_name}.xml"],
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0]),
         autobuild=False
     )
@@ -107,7 +109,7 @@ def main(args):
             envs,
             f"videos/{experiment_name}",
             record_video_trigger=lambda x: x % 100000 == 0,
-            video_length=3000,
+            video_length=4800,
         )
     assert isinstance(
         envs.action_space, MultiDiscrete
@@ -213,7 +215,7 @@ def main(args):
                 break
 
     # Save data
-    directory = f"{args.data_dir}/{args.map_name}/{args.seed}"
+    directory = f"{args.data_dir}/{map_name}/{args.seed}"
     if len(data) == 0:
         data.append(-2)
 
@@ -224,6 +226,19 @@ def main(args):
         writer.writerow(data)
     envs.close()
 
+def run_parallel(args):
+    num_maps = range(1, 101)
+    map_nams = [f"map_{i}" for i in num_maps]
+    seeds = [np.random.randint(1, 10000001) for i in range(10)]
+
+    # TODO: Finish this combinations
+    combinations = list(itertools.product(args, map_nams, seeds))
+
+    with Pool(1) as pool:
+        pool.starmap(self_play, combinations)
+
+
 if __name__ == "__main__":
     args = parse_args()
-    main(args)
+    # run_parallel(args)
+    self_play(args, args.map_name, args.seed)
