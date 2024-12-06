@@ -62,7 +62,7 @@
         "--episode-length", "64",
         "--replay-buffer-size", "1000",
         "--step-jump", "4",
-        "--asym_to_fairness_ratio", "0.8",
+        "--asym_to_fairness_ratio", "0.25",
         "--wall-reward", "0.1",
         // "--use-baseline",
         // "--visualize_maps",
@@ -106,7 +106,7 @@
       "console": "integratedTerminal",
       "args": [
         "--input-map-path", "input_maps/defaultMap.xml",
-        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
+        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_1.0_wr_0.1_ep_1000_len_64_baseline_False___1733184828.pt",
         "--num-maps", "1000",
         "--episode_length", "64",
         "--top-k", "5",
@@ -121,11 +121,21 @@
       "console": "integratedTerminal",
       "args": [
         "--input-map-path", "input_maps/defaultMap.xml",
-        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_0.8_wr_0.1_ep_1000_len_64_baseline_True___1733022366.pt",
+        "--model-path", "models/output/training_net_eps_1.0_tau_0.005_ratio_1.0_wr_0.1_ep_1000_len_64_baseline_True___1733193469.pt",
         "--num-maps", "1000",
         "--episode_length", "64",
-        "--use-random"
+        "--use-random",
+        "--use-baseline",
+        // "--save-maps"
       ]
+    },
+    {
+      "name": "Run map generator sequencer",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/generator",
+      "request": "launch",
+      "program": "map_generator_sequencer.py",
+      "console": "integratedTerminal",
     },
     {
       "name": "dont use",
