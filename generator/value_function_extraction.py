@@ -61,7 +61,18 @@ def squared_value_difference(
         p2_mask = invalid_action_masks[1::2]
 
         p2_obs_reversed = torch.flip(p2_obs, dims=[1, 2])
-        p2_mask_reversed = torch.flip(p2_mask, dims=[1])
+        p2_mask_reversed = p2_mask.reshape(1, 16, 16, 78).flip(dims=[1, 2]).reshape(1, 256, 78)
+
+        p2_mask_reversed[..., [6, 8]] = p2_mask_reversed[..., [8, 6]]
+        p2_mask_reversed[..., [7, 9]] = p2_mask_reversed[..., [9, 7]]
+        p2_mask_reversed[..., [10, 12]] = p2_mask_reversed[..., [12, 10]]
+        p2_mask_reversed[..., [11, 13]] = p2_mask_reversed[..., [13, 11]]
+        p2_mask_reversed[..., [14, 16]] = p2_mask_reversed[..., [16, 14]]
+        p2_mask_reversed[..., [15, 17]] = p2_mask_reversed[..., [17, 15]]
+        p2_mask_reversed[..., [18, 20]] = p2_mask_reversed[..., [20, 18]]
+        p2_mask_reversed[..., [19, 21]] = p2_mask_reversed[..., [21, 19]]
+
+
 
         # 1, 256, 7
         p1_action, _, _, _, p1_value = agent.get_action_and_value(
@@ -74,6 +85,17 @@ def squared_value_difference(
             invalid_action_masks=p2_mask_reversed,
             device=device,
         )
+
+        p2_fixed_action = p2_action.reshape(1, 16, 16, 7).flip(dims=[1, 2]).reshape(1, 256, 7)
+        p2_fixed_action[:, :, 1: 5] =  p2_fixed_action[:, :, 1: 5] + 2 % 4
+
+        p2_relative_attack = p2_fixed_action[:, :, -1]
+        x = p2_relative_attack % 7
+        y = p2_relative_attack // 7
+        x_prime = 6 - x
+        y_prime = 6 - y
+        p2_fixed_action[:, :, -1] = x_prime + 7 * y_prime
+
 
     return (p1_value - p2_value) ** 2
 
