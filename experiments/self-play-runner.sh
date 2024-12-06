@@ -6,11 +6,11 @@ SEED=$RANDOM
 
 
 # Loop 30 times
-for i in {1..100}
+for i in {1..10}
 do
     # Generate a random seed using $RANDOM
     echo "Running iteration $i with seed $SEED..."
-    python "$PYTHON_SCRIPT" --seed "$SEED" --mapName "map_$i"
+    python "$PYTHON_SCRIPT" --seed "$SEED" --mapName "map-$i"
 done
 
 echo "All iterations complete."
