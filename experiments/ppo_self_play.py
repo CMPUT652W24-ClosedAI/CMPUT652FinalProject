@@ -67,7 +67,6 @@ def parse_args():
 
 
 def main(args):
-    data = []
     if args.model_type == "ppo_gridnet_large":
         from ppo_gridnet_large import Agent, MicroRTSStatsRecorder
 
@@ -99,6 +98,7 @@ def main(args):
         ai2s=ais,
         map_paths=[f"{args.map_path}/{args.map_name}.xml"],
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0]),
+        autobuild=False
     )
     envs = MicroRTSStatsRecorder(envs)
     envs = VecMonitor(envs)
@@ -116,112 +116,103 @@ def main(args):
     agent = Agent(envs).to(device)
     agent2 = Agent(envs).to(device)
 
-    # ALGO Logic: Storage for epoch data
-    mapsize = 16 * 16
-    invalid_action_shape = (mapsize, envs.action_plane_space.nvec.sum())
-
-    # TRY NOT TO MODIFY: start the game
-    global_step = 0
-    # Note how `next_obs` and `next_done` are used; their usage is equivalent to
-    # https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/blob/84a7582477fb0d5c82ad6d850fe476829dddd2e1/a2c_ppo_acktr/storage.py#L60
-    next_obs = torch.Tensor(envs.reset()).to(device)
-    next_done = torch.zeros(args.num_envs).to(device)
-
-    initial_state_copy = next_obs.clone().detach()
-
-    starting_update = 1
     agent.load_state_dict(torch.load(args.agent_model_path, map_location=device))
     agent.eval()
     agent2.load_state_dict(torch.load(args.agent2_model_path, map_location=device))
     agent2.eval()
 
-    for step in range(0, args.num_steps):
-        global_step += 1 * args.num_envs
-        # ALGO LOGIC: put action logic here
-        with torch.no_grad():
-            invalid_action_masks = torch.tensor(
-                np.array(envs.get_action_mask())
-            ).to(device)
+    num_episodes = 5
+    data = [-2] * num_episodes
+    for episode in range(num_episodes):
+        next_obs = torch.Tensor(envs.reset()).to(device)
+        next_done = torch.zeros(args.num_envs).to(device)
 
-            p1_obs = next_obs[::2]
-            p2_obs = next_obs[1::2]
-            p1_mask = invalid_action_masks[::2]
-            p2_mask = invalid_action_masks[1::2]
+        for step in range(0, args.num_steps):
+            with torch.no_grad():
+                invalid_action_masks = torch.tensor(
+                    np.array(envs.get_action_mask())
+                ).to(device)
 
-            p2_obs_reversed = torch.flip(p2_obs, dims=[1, 2])
-            p2_mask_reversed = p2_mask.reshape(1, 16, 16, 78).flip(dims=[1, 2]).reshape(1, 256, 78)
+                p1_obs = next_obs[::2]
+                p2_obs = next_obs[1::2]
+                p1_mask = invalid_action_masks[::2]
+                p2_mask = invalid_action_masks[1::2]
 
-            p2_mask_reversed[..., [6, 8]] = p2_mask_reversed[..., [8, 6]]
-            p2_mask_reversed[..., [7, 9]] = p2_mask_reversed[..., [9, 7]]
-            p2_mask_reversed[..., [10, 12]] = p2_mask_reversed[..., [12, 10]]
-            p2_mask_reversed[..., [11, 13]] = p2_mask_reversed[..., [13, 11]]
-            p2_mask_reversed[..., [14, 16]] = p2_mask_reversed[..., [16, 14]]
-            p2_mask_reversed[..., [15, 17]] = p2_mask_reversed[..., [17, 15]]
-            p2_mask_reversed[..., [18, 20]] = p2_mask_reversed[..., [20, 18]]
-            p2_mask_reversed[..., [19, 21]] = p2_mask_reversed[..., [21, 19]]
+                p2_obs_reversed = torch.flip(p2_obs, dims=[1, 2])
+                p2_mask_reversed = p2_mask.reshape(1, 16, 16, 78).flip(dims=[1, 2]).reshape(1, 256, 78)
 
-            p1_action, _, _, _, _ = agent.get_action_and_value(
-                p1_obs, envs=envs, invalid_action_masks=p1_mask, device=device
-            )
+                p2_mask_reversed[..., [6, 8]] = p2_mask_reversed[..., [8, 6]]
+                p2_mask_reversed[..., [7, 9]] = p2_mask_reversed[..., [9, 7]]
+                p2_mask_reversed[..., [10, 12]] = p2_mask_reversed[..., [12, 10]]
+                p2_mask_reversed[..., [11, 13]] = p2_mask_reversed[..., [13, 11]]
+                p2_mask_reversed[..., [14, 16]] = p2_mask_reversed[..., [16, 14]]
+                p2_mask_reversed[..., [15, 17]] = p2_mask_reversed[..., [17, 15]]
+                p2_mask_reversed[..., [18, 20]] = p2_mask_reversed[..., [20, 18]]
+                p2_mask_reversed[..., [19, 21]] = p2_mask_reversed[..., [21, 19]]
 
-            p2_action, _, _, _, _ = agent2.get_action_and_value(
-                p2_obs_reversed, envs=envs, invalid_action_masks=p2_mask_reversed, device=device
-            )
+                p1_action, _, _, _, _ = agent.get_action_and_value(
+                    p1_obs, envs=envs, invalid_action_masks=p1_mask, device=device
+                )
 
-            p2_fixed_action = p2_action.reshape(1, 16, 16, 7).flip(dims=[1, 2]).reshape(1, 256, 7)
-            p2_fixed_action[:, :, 1: 5] = (p2_fixed_action[:, :, 1: 5] + 2 )% 4
+                p2_action, _, _, _, _ = agent2.get_action_and_value(
+                    p2_obs_reversed, envs=envs, invalid_action_masks=p2_mask_reversed, device=device
+                )
 
-            p2_relative_attack = torch.clone(p2_fixed_action[:, :, -1])
-            # x = (p2_relative_attack % 7)
-            # y = (p2_relative_attack // 7)
-            # x_prime =( 6 - x)
-            # y_prime = (6 - y)
-            # result = (7 * y_prime) + x_prime
-            # p2_fixed_action[:, :, -1] = result
-            #
+                p2_fixed_action = p2_action.reshape(1, 16, 16, 7).flip(dims=[1, 2]).reshape(1, 256, 7)
+                p2_fixed_action[:, :, 1: 5] = (p2_fixed_action[:, :, 1: 5] + 2 )% 4
 
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 31, torch.tensor(-1), p2_relative_attack)
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 17, torch.tensor(31),p2_relative_attack)
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(17),p2_relative_attack)
+                p2_relative_attack = torch.clone(p2_fixed_action[:, :, -1])
+                # x = (p2_relative_attack % 7)
+                # y = (p2_relative_attack // 7)
+                # x_prime =( 6 - x)
+                # y_prime = (6 - y)
+                # result = (7 * y_prime) + x_prime
+                # p2_fixed_action[:, :, -1] = result
+                #
 
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 25, torch.tensor(-1), p2_relative_attack)
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 23, torch.tensor(25), p2_relative_attack)
-            p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(23), p2_relative_attack)
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 31, torch.tensor(-1), p2_relative_attack)
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 17, torch.tensor(31),p2_relative_attack)
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(17),p2_relative_attack)
 
-            action = torch.zeros(
-                (args.num_envs, p2_action.shape[1], p2_action.shape[2])
-            )
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 25, torch.tensor(-1), p2_relative_attack)
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 23, torch.tensor(25), p2_relative_attack)
+                p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == -1, torch.tensor(23), p2_relative_attack)
 
-            action[::2] = p1_action
-            action[1::2] = p2_fixed_action
+                action = torch.zeros(
+                    (args.num_envs, p2_action.shape[1], p2_action.shape[2])
+                )
 
-        try:
-            next_obs, rs, ds, infos = envs.step(
-                action.cpu().numpy().reshape(envs.num_envs, -1)
-            )
-            next_obs = torch.Tensor(next_obs).to(device)
-        except Exception as e:
-            e.printStackTrace()
-            raise
-        if ds[0] or ds[1]:
-            print(f"Step: {step}")
-            print("Hello world")
+                action[::2] = p1_action
+                action[1::2] = p2_fixed_action
 
-        for idx, info in enumerate(infos):
-            if "episode" in info.keys():
-                if args.ai:
-                    print(
-                        "against",
-                        args.ai,
-                        info["microrts_stats"]["WinLossRewardFunction"],
-                    )
-                else:
-                    if idx % 2 == 0:
+            try:
+                next_obs, rs, ds, infos = envs.step(
+                    action.cpu().numpy().reshape(envs.num_envs, -1)
+                )
+                next_obs = torch.Tensor(next_obs).to(device)
+            except Exception as e:
+                e.printStackTrace()
+                raise
+
+            for idx, info in enumerate(infos):
+                if "episode" in info.keys():
+                    if args.ai:
                         print(
-                            f"player{idx % 2}",
+                            "against",
+                            args.ai,
                             info["microrts_stats"]["WinLossRewardFunction"],
                         )
-                        data.append(info["microrts_stats"]["WinLossRewardFunction"])
+                    else:
+                        if idx % 2 == 0:
+                            print(
+                                f"player{idx % 2}",
+                                info["microrts_stats"]["WinLossRewardFunction"],
+                            )
+                            data[episode] = info["microrts_stats"]["WinLossRewardFunction"]
+            if ds[0] or ds[1]:
+                break
+
+    # Save data
     directory = f"{args.data_dir}/{args.map_name}/{args.seed}"
     if len(data) == 0:
         data.append(-2)
