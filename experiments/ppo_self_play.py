@@ -164,13 +164,6 @@ def self_play(args, map_name: str, seed: int):
                 p2_fixed_action[:, :, 1: 5] = (p2_fixed_action[:, :, 1: 5] + 2 )% 4
 
                 p2_relative_attack = torch.clone(p2_fixed_action[:, :, -1])
-                # x = (p2_relative_attack % 7)
-                # y = (p2_relative_attack // 7)
-                # x_prime =( 6 - x)
-                # y_prime = (6 - y)
-                # result = (7 * y_prime) + x_prime
-                # p2_fixed_action[:, :, -1] = result
-                #
 
                 p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 31, torch.tensor(-1), p2_relative_attack)
                 p2_fixed_action[:, :, -1] = torch.where(p2_relative_attack == 17, torch.tensor(31),p2_relative_attack)
@@ -230,15 +223,15 @@ def run_parallel(args):
     num_maps = range(1, 101)
     map_nams = [f"map_{i}" for i in num_maps]
     seeds = [np.random.randint(1, 10000001) for i in range(10)]
+    args_list = [args]
 
-    # TODO: Finish this combinations
-    combinations = list(itertools.product(args, map_nams, seeds))
+    combinations = list(itertools.product(args_list, map_nams, seeds))
 
-    with Pool(1) as pool:
+    with Pool(6) as pool:
         pool.starmap(self_play, combinations)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    # run_parallel(args)
-    self_play(args, args.map_name, args.seed)
+    run_parallel(args)
+    # self_play(args, args.map_name, args.seed)
