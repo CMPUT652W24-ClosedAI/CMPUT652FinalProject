@@ -3,7 +3,7 @@
 import argparse
 import csv
 import itertools
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, Lock
 import os
 import random
 import time
@@ -57,7 +57,7 @@ def parse_args():
         help='the opponent AI to evaluate against')
     parser.add_argument('--model-type', type=str, default=f"ppo_gridnet", choices=["ppo_gridnet_large", "ppo_gridnet"],
         help='the output path of the leaderboard csv')
-    parser.add_argument('--data_dir', type=str, default=f"results/self_play",
+    parser.add_argument('--data_dir', type=str, default=f"results/self_play_agent_maps",
         help='the output path of the self play csv')
     args = parser.parse_args()
     if not args.seed:
@@ -79,13 +79,13 @@ def self_play(args, map_name: str, seed: int):
         from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
     # TRY NOT TO MODIFY: setup the environment
-    experiment_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    experiment_name = f"{args.gym_id}__{args.exp_name}__{seed}__{int(time.time())}"
 
     # TRY NOT TO MODIFY: seeding
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = args.torch_deterministic
 
     ais = []
@@ -191,24 +191,13 @@ def self_play(args, map_name: str, seed: int):
 
             for idx, info in enumerate(infos):
                 if "episode" in info.keys():
-                    if args.ai:
-                        print(
-                            "against",
-                            args.ai,
-                            info["microrts_stats"]["WinLossRewardFunction"],
-                        )
-                    else:
-                        if idx % 2 == 0:
-                            print(
-                                f"player{idx % 2}",
-                                info["microrts_stats"]["WinLossRewardFunction"],
-                            )
-                            data[episode] = info["microrts_stats"]["WinLossRewardFunction"]
+                    if idx % 2 == 0:
+                        data[episode] = info["microrts_stats"]["WinLossRewardFunction"]
             if ds[0] or ds[1]:
                 break
 
     # Save data
-    directory = f"{args.data_dir}/{map_name}/{args.seed}"
+    directory = f"{args.data_dir}/{map_name}/{seed}"
     if len(data) == 0:
         data.append(-2)
 
@@ -219,6 +208,7 @@ def self_play(args, map_name: str, seed: int):
         writer.writerow(data)
     envs.close()
 
+
 def run_parallel(args):
     num_maps = range(1, 101)
     map_nams = [f"map_{i}" for i in num_maps]
@@ -227,7 +217,7 @@ def run_parallel(args):
 
     combinations = list(itertools.product(args_list, map_nams, seeds))
 
-    with Pool(6) as pool:
+    with Pool(10) as pool:
         pool.starmap(self_play, combinations)
 
 
