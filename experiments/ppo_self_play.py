@@ -3,6 +3,7 @@
 import argparse
 import csv
 import itertools
+import multiprocessing
 from multiprocessing import Pool, Lock
 import os
 import random
@@ -23,7 +24,7 @@ def parse_args():
         help='the name of this experiment')
     parser.add_argument('--map_name', type=str, default="defaultMap",
         help='the name of this experiment')
-    parser.add_argument('--map_path', type=str, default="maps/testingMaps",
+    parser.add_argument('--map_path', type=str, default="maps/asymRLAgentValueGeneratedMaps",
         help='the name of this experiment')
     parser.add_argument('--gym-id', type=str, default="MicroRTSGridModeVecEnv",
         help='the id of the gym environment')
@@ -57,7 +58,7 @@ def parse_args():
         help='the opponent AI to evaluate against')
     parser.add_argument('--model-type', type=str, default=f"ppo_gridnet", choices=["ppo_gridnet_large", "ppo_gridnet"],
         help='the output path of the leaderboard csv')
-    parser.add_argument('--data_dir', type=str, default=f"results/self_play_agent_maps",
+    parser.add_argument('--data_dir', type=str, default=f"results/self_play_agent_fairness_maps",
         help='the output path of the self play csv')
     args = parser.parse_args()
     if not args.seed:
@@ -217,7 +218,7 @@ def run_parallel(args):
 
     combinations = list(itertools.product(args_list, map_nams, seeds))
 
-    with Pool(10) as pool:
+    with Pool(multiprocessing.cpu_count() - 1) as pool:
         pool.starmap(self_play, combinations)
 
 
