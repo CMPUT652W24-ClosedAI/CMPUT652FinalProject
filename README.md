@@ -51,6 +51,11 @@ If the `poetry install` command gets stuck on a Linux machine, [it may help to f
 poetry run black .
 ```
 
+## Code Location
+
+All of the code for map generation is located in the [generator](./generator) folder.
+
+For evaluating win-rates, use the [self-play](experiments/ppo_self_play.py) script.
 
 ## Running with args
 cd generator
